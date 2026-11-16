@@ -3,20 +3,10 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import {
-  Activity,
-  ArrowUpRight,
-  CheckCircle2,
-  Clock,
-  Cpu,
-  Flame,
-  Gauge,
-  Layers,
+  ChevronRight,
   Play,
   Plus,
   RefreshCw,
-  Server,
-  Sparkles,
-  Zap,
 } from "lucide-react";
 
 interface DeploymentItem {
@@ -79,13 +69,13 @@ const activeDeployments: DeploymentItem[] = [
 ];
 
 const hourlyThroughput = [
-  { hour: "00:00", tokens: 2400, rps: 90 },
-  { hour: "04:00", tokens: 1800, rps: 68 },
-  { hour: "08:00", tokens: 3600, rps: 140 },
-  { hour: "12:00", tokens: 5200, rps: 210 },
-  { hour: "16:00", tokens: 6100, rps: 245 },
-  { hour: "20:00", tokens: 4900, rps: 195 },
-  { hour: "Now", tokens: 5420, rps: 220 },
+  { hour: "00:00", tokens: 2400 },
+  { hour: "04:00", tokens: 1800 },
+  { hour: "08:00", tokens: 3600 },
+  { hour: "12:00", tokens: 5200 },
+  { hour: "16:00", tokens: 6100 },
+  { hour: "20:00", tokens: 4900 },
+  { hour: "Now", tokens: 5420 },
 ];
 
 export default function DashboardOverviewPage() {
@@ -93,185 +83,127 @@ export default function DashboardOverviewPage() {
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    setTimeout(() => setIsRefreshing(false), 600);
+    setTimeout(() => setIsRefreshing(false), 400);
   };
 
   return (
     <div className="space-y-6">
-      {/* Top Banner / Hero */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-2 border-b border-zinc-800">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800/80">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-            Inference Cluster Overview
+          <h1 className="text-xl font-semibold text-white tracking-tight">
+            Cluster overview
           </h1>
-          <p className="text-zinc-400 text-sm mt-1">
-            Real-time status, serving metrics, and health telemetry for deployed models.
+          <p className="text-xs text-zinc-400 mt-0.5">
+            Real-time inference serving metrics and engine status
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <button
             onClick={handleRefresh}
-            className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+            className="p-1.5 rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white transition-colors"
             title="Refresh metrics"
           >
             <RefreshCw
-              className={`size-4 ${isRefreshing ? "animate-spin text-cyan-400" : ""}`}
+              className={`size-3.5 ${isRefreshing ? "animate-spin text-zinc-200" : ""}`}
             />
           </button>
 
           <Link
-            href="/dashboard/benchmarks"
-            className="px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-medium flex items-center gap-1.5 transition"
-          >
-            <Gauge className="size-3.5 text-zinc-400" />
-            <span>Benchmark Run</span>
-          </Link>
-
-          <Link
             href="/dashboard/deployments"
-            className="px-3.5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-medium flex items-center gap-1.5 transition shadow-sm"
+            className="h-8 px-3 rounded-md bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-medium flex items-center gap-1.5 transition-colors"
           >
             <Plus className="size-3.5" />
-            <span>Deploy Model</span>
+            <span>Deploy model</span>
           </Link>
         </div>
       </div>
 
-      {/* KPI Stats Grid */}
+      {/* Unslopped Stat Cards (Numbers First, Quiet Labels, No Decorative Icon Boxes) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Stat 1 */}
-        <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700/80 transition relative overflow-hidden group">
-          <div className="flex items-center justify-between text-zinc-400 mb-2">
-            <span className="text-xs font-medium tracking-wide uppercase font-mono">
-              Serving Throughput
-            </span>
-            <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400">
-              <Zap className="size-4" />
-            </div>
+        <div className="p-4 rounded-lg border border-zinc-800/80 bg-zinc-900/40">
+          <div className="text-xs text-zinc-400">Serving throughput</div>
+          <div className="text-2xl font-medium text-white font-mono tabular-nums mt-1.5">
+            5,420 <span className="text-xs text-zinc-500 font-sans">tok/s</span>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-white font-mono">5,420</span>
-            <span className="text-xs text-zinc-400 font-mono">tokens/sec</span>
-          </div>
-          <div className="flex items-center gap-1 text-[11px] text-emerald-400 mt-2">
-            <ArrowUpRight className="size-3" />
-            <span>+14.2% peak surge</span>
-            <span className="text-zinc-500 ml-auto font-mono">P99: 42 tok/s</span>
+          <div className="text-[11px] text-zinc-500 font-mono mt-1 flex items-center gap-1">
+            <span className="text-emerald-400">+14.2%</span>
+            <span>vs 24h ago</span>
           </div>
         </div>
 
-        {/* Stat 2 */}
-        <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700/80 transition relative overflow-hidden group">
-          <div className="flex items-center justify-between text-zinc-400 mb-2">
-            <span className="text-xs font-medium tracking-wide uppercase font-mono">
-              TTFT (P50 Latency)
-            </span>
-            <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
-              <Clock className="size-4" />
-            </div>
+        <div className="p-4 rounded-lg border border-zinc-800/80 bg-zinc-900/40">
+          <div className="text-xs text-zinc-400">Time to first token (p50)</div>
+          <div className="text-2xl font-medium text-white font-mono tabular-nums mt-1.5">
+            14.8 <span className="text-xs text-zinc-500 font-sans">ms</span>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-white font-mono">14.8</span>
-            <span className="text-xs text-zinc-400 font-mono">ms</span>
-          </div>
-          <div className="flex items-center gap-1 text-[11px] text-emerald-400 mt-2">
-            <ArrowUpRight className="size-3" />
-            <span>2.4ms faster with SGLang</span>
-            <span className="text-zinc-500 ml-auto font-mono">ITL: 7.2ms</span>
+          <div className="text-[11px] text-zinc-500 font-mono mt-1">
+            p99: 34.2 ms • itl: 6.8 ms
           </div>
         </div>
 
-        {/* Stat 3 */}
-        <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700/80 transition relative overflow-hidden group">
-          <div className="flex items-center justify-between text-zinc-400 mb-2">
-            <span className="text-xs font-medium tracking-wide uppercase font-mono">
-              Active Endpoints
-            </span>
-            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
-              <Server className="size-4" />
-            </div>
+        <div className="p-4 rounded-lg border border-zinc-800/80 bg-zinc-900/40">
+          <div className="text-xs text-zinc-400">Active deployments</div>
+          <div className="text-2xl font-medium text-white font-mono tabular-nums mt-1.5">
+            4 <span className="text-xs text-zinc-500 font-sans">instances</span>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-white font-mono">4 / 4</span>
-            <span className="text-xs text-zinc-400 font-mono">healthy</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 mt-2">
-            <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>8x H100 (80GB) utilized</span>
-            <span className="text-zinc-500 ml-auto font-mono">75.3% VRAM</span>
+          <div className="text-[11px] text-zinc-500 font-mono mt-1 flex items-center gap-1.5">
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+            <span>8x H100 SXM5 allocated</span>
           </div>
         </div>
 
-        {/* Stat 4 */}
-        <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700/80 transition relative overflow-hidden group">
-          <div className="flex items-center justify-between text-zinc-400 mb-2">
-            <span className="text-xs font-medium tracking-wide uppercase font-mono">
-              KV Cache Hit Rate
-            </span>
-            <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400">
-              <Flame className="size-4" />
-            </div>
+        <div className="p-4 rounded-lg border border-zinc-800/80 bg-zinc-900/40">
+          <div className="text-xs text-zinc-400">KV cache hit rate</div>
+          <div className="text-2xl font-medium text-white font-mono tabular-nums mt-1.5">
+            88.4%
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-white font-mono">88.4%</span>
-            <span className="text-xs text-zinc-400 font-mono">radix attention</span>
-          </div>
-          <div className="flex items-center gap-1 text-[11px] text-cyan-400 mt-2">
-            <Sparkles className="size-3" />
-            <span>Prefix caching active</span>
-            <span className="text-zinc-500 ml-auto font-mono">Chunked Prefill</span>
+          <div className="text-[11px] text-zinc-500 font-mono mt-1">
+            RadixAttention reuse
           </div>
         </div>
       </div>
 
-      {/* Throughput & Cluster Activity Chart Card */}
+      {/* Main Throughput Chart & GPU Memory Pool */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 p-5 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="lg:col-span-2 p-5 rounded-lg border border-zinc-800/80 bg-zinc-900/40 space-y-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-semibold text-white flex items-center gap-2">
-                <Activity className="size-4 text-cyan-400" />
-                Aggregated Generation Throughput
+              <h2 className="text-sm font-medium text-white">
+                Generation throughput
               </h2>
-              <p className="text-xs text-zinc-400 mt-0.5">
-                Output token generation rate (tok/s) across all inference workers
+              <p className="text-xs text-zinc-500 mt-0.5">
+                Output token generation rate (tok/s) across active engines
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 text-xs text-zinc-400 bg-zinc-950 px-2.5 py-1 rounded border border-zinc-800">
-                <span className="size-2 rounded-full bg-cyan-400" /> Tok/s
-              </span>
-              <span className="inline-flex items-center gap-1 text-xs text-zinc-400 bg-zinc-950 px-2.5 py-1 rounded border border-zinc-800">
-                <span className="size-2 rounded-full bg-indigo-400" /> RPS
-              </span>
-            </div>
+            <span className="text-xs text-zinc-400 font-mono">
+              Peak: 6,100 tok/s
+            </span>
           </div>
 
-          {/* Custom SVG Bar/Area Chart */}
-          <div className="h-56 w-full flex flex-col justify-end pt-4">
-            <div className="h-44 flex items-end justify-between gap-2 sm:gap-4 px-2 border-b border-zinc-800">
+          {/* Clean Solid Monochromatic Chart */}
+          <div className="h-48 flex flex-col justify-end pt-4">
+            <div className="h-36 flex items-end justify-between gap-3 px-1 border-b border-zinc-800">
               {hourlyThroughput.map((item, idx) => {
                 const heightPercent = Math.round((item.tokens / 6500) * 100);
                 return (
                   <div
                     key={idx}
-                    className="flex-1 flex flex-col items-center gap-2 h-full justify-end group"
+                    className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group"
                   >
-                    <div className="text-[10px] text-zinc-400 opacity-0 group-hover:opacity-100 transition font-mono">
+                    <span className="text-[10px] text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity font-mono tabular-nums">
                       {item.tokens}
-                    </div>
-                    <div className="w-full max-w-[48px] bg-zinc-800 group-hover:bg-cyan-500/30 rounded-t-md transition-all relative overflow-hidden flex flex-col justify-end" style={{ height: `${heightPercent}%` }}>
-                      <div
-                        className="w-full bg-gradient-to-t from-cyan-500 to-indigo-500 rounded-t-md group-hover:from-cyan-400 group-hover:to-indigo-400 transition"
-                        style={{ height: "100%" }}
-                      />
-                    </div>
+                    </span>
+                    <div
+                      className="w-full max-w-[40px] bg-zinc-700 hover:bg-zinc-500 rounded-t-sm transition-colors"
+                      style={{ height: `${heightPercent}%` }}
+                    />
                   </div>
                 );
               })}
             </div>
-            <div className="flex justify-between px-2 pt-2 text-[11px] text-zinc-500 font-mono">
+            <div className="flex justify-between px-1 pt-2 text-[11px] text-zinc-500 font-mono">
               {hourlyThroughput.map((item, idx) => (
                 <span key={idx}>{item.hour}</span>
               ))}
@@ -279,146 +211,140 @@ export default function DashboardOverviewPage() {
           </div>
         </div>
 
-        {/* Cluster Hardware & VRAM Allocation */}
-        <div className="p-5 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-4 flex flex-col justify-between">
+        {/* Memory Pool Breakdown */}
+        <div className="p-5 rounded-lg border border-zinc-800/80 bg-zinc-900/40 flex flex-col justify-between space-y-4">
           <div>
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-white flex items-center gap-2">
-                <Cpu className="size-4 text-indigo-400" />
-                GPU Memory Pool
-              </h2>
-              <span className="text-xs font-mono text-zinc-400">80GB H100 x8</span>
+              <h2 className="text-sm font-medium text-white">GPU memory pool</h2>
+              <span className="text-xs font-mono text-zinc-500">640 GB total</span>
             </div>
-            <p className="text-xs text-zinc-400 mt-1">
-              Real-time VRAM allocation, model weights, and KV Cache reserves.
+            <p className="text-xs text-zinc-500 mt-0.5">
+              Weights allocation, KV block manager, and free buffer
             </p>
           </div>
 
-          <div className="space-y-3.5 my-2">
+          <div className="space-y-3 text-xs">
             <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-zinc-300">Model Weights (FP8 / FP16)</span>
-                <span className="text-zinc-400 font-mono">248 GB (38.7%)</span>
+              <div className="flex justify-between text-zinc-400 mb-1">
+                <span>Model weights</span>
+                <span className="font-mono tabular-nums text-zinc-300">
+                  248 GB (38.7%)
+                </span>
               </div>
-              <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
-                <div className="bg-cyan-500 h-full rounded-full" style={{ width: "38.7%" }} />
+              <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                <div className="bg-zinc-200 h-full rounded-full" style={{ width: "38.7%" }} />
               </div>
             </div>
 
             <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-zinc-300">KV Cache Block Manager</span>
-                <span className="text-zinc-400 font-mono">234 GB (36.5%)</span>
+              <div className="flex justify-between text-zinc-400 mb-1">
+                <span>KV cache block manager</span>
+                <span className="font-mono tabular-nums text-zinc-300">
+                  234 GB (36.5%)
+                </span>
               </div>
-              <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
-                <div className="bg-indigo-500 h-full rounded-full" style={{ width: "36.5%" }} />
+              <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                <div className="bg-zinc-400 h-full rounded-full" style={{ width: "36.5%" }} />
               </div>
             </div>
 
             <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-zinc-300">Free / Overhead Buffer</span>
-                <span className="text-zinc-400 font-mono">158 GB (24.8%)</span>
+              <div className="flex justify-between text-zinc-400 mb-1">
+                <span>Free overhead buffer</span>
+                <span className="font-mono tabular-nums text-zinc-300">
+                  158 GB (24.8%)
+                </span>
               </div>
-              <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
+              <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
                 <div className="bg-zinc-700 h-full rounded-full" style={{ width: "24.8%" }} />
               </div>
             </div>
           </div>
 
-          <div className="pt-3 border-t border-zinc-800 text-xs text-zinc-400 flex items-center justify-between">
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="size-3.5 text-emerald-400" />
-              PagedAttention Enabled
-            </span>
+          <div className="pt-3 border-t border-zinc-800 text-xs flex items-center justify-between text-zinc-400">
+            <span>PagedAttention active</span>
             <Link
               href="/dashboard/analytics"
-              className="text-cyan-400 hover:text-cyan-300 text-xs font-medium"
+              className="text-zinc-200 hover:text-white flex items-center gap-1 font-medium"
             >
-              Detailed Metrics &rarr;
+              <span>Detailed view</span>
+              <ChevronRight className="size-3" />
             </Link>
           </div>
         </div>
       </div>
 
       {/* Active Deployments Table */}
-      <div className="p-5 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="p-5 rounded-lg border border-zinc-800/80 bg-zinc-900/40 space-y-4">
+        <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-semibold text-white flex items-center gap-2">
-              <Layers className="size-4 text-cyan-400" />
-              Active Model Deployments
+            <h2 className="text-sm font-medium text-white">
+              Active serving deployments
             </h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              Serving engines currently handling production inference requests.
+            <p className="text-xs text-zinc-500 mt-0.5">
+              Engines currently responding to production completions
             </p>
           </div>
           <Link
             href="/dashboard/deployments"
-            className="text-xs text-cyan-400 hover:text-cyan-300 font-medium self-start sm:self-auto"
+            className="text-xs text-zinc-300 hover:text-white font-medium"
           >
-            Manage Deployments &rarr;
+            Manage all &rarr;
           </Link>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-zinc-800 text-zinc-400 font-mono">
-                <th className="pb-3 font-medium">Deployment / Model</th>
-                <th className="pb-3 font-medium">Engine</th>
-                <th className="pb-3 font-medium">Hardware</th>
-                <th className="pb-3 font-medium">Throughput</th>
-                <th className="pb-3 font-medium">TTFT</th>
-                <th className="pb-3 font-medium">Status</th>
-                <th className="pb-3 font-medium text-right">Actions</th>
+              <tr className="border-b border-zinc-800 text-zinc-500 font-mono">
+                <th className="pb-2.5 font-normal">Deployment</th>
+                <th className="pb-2.5 font-normal">Engine</th>
+                <th className="pb-2.5 font-normal">Hardware</th>
+                <th className="pb-2.5 font-normal">Throughput</th>
+                <th className="pb-2.5 font-normal">TTFT</th>
+                <th className="pb-2.5 font-normal">Status</th>
+                <th className="pb-2.5 font-normal text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/60">
+            <tbody className="divide-y divide-zinc-800/60 font-mono">
               {activeDeployments.map((dep) => (
-                <tr key={dep.id} className="hover:bg-zinc-800/30 transition">
-                  <td className="py-3 pr-4">
+                <tr key={dep.id} className="hover:bg-zinc-800/20 transition-colors">
+                  <td className="py-2.5 pr-4 font-sans">
                     <div className="font-medium text-white">{dep.name}</div>
-                    <div className="text-[11px] text-zinc-400 font-mono truncate max-w-xs">
+                    <div className="text-[11px] text-zinc-500 font-mono truncate max-w-xs">
                       {dep.model}
                     </div>
                   </td>
-                  <td className="py-3 pr-4">
-                    <span className="px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 font-mono border border-zinc-700/60 text-[11px]">
+                  <td className="py-2.5 pr-4">
+                    <span className="px-2 py-0.5 rounded border border-zinc-800 bg-zinc-900 text-zinc-300 text-[11px]">
                       {dep.engine}
                     </span>
                   </td>
-                  <td className="py-3 pr-4 text-zinc-300 font-mono text-[11px]">
+                  <td className="py-2.5 pr-4 text-zinc-400 text-[11px]">
                     {dep.gpus}
                   </td>
-                  <td className="py-3 pr-4 text-zinc-300 font-mono">
+                  <td className="py-2.5 pr-4 text-zinc-300 tabular-nums">
                     {dep.qps} rps
                   </td>
-                  <td className="py-3 pr-4 text-emerald-400 font-mono">
+                  <td className="py-2.5 pr-4 text-zinc-200 tabular-nums">
                     {dep.ttft}
                   </td>
-                  <td className="py-3 pr-4">
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                        dep.status === "healthy"
-                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                          : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                      }`}
-                    >
+                  <td className="py-2.5 pr-4 font-sans">
+                    <span className="inline-flex items-center gap-1.5 text-[11px]">
                       <span
                         className={`size-1.5 rounded-full ${
-                          dep.status === "healthy" ? "bg-emerald-400" : "bg-amber-400"
+                          dep.status === "healthy" ? "bg-emerald-500" : "bg-amber-500"
                         }`}
                       />
-                      {dep.status}
+                      <span className="text-zinc-400">{dep.status}</span>
                     </span>
                   </td>
-                  <td className="py-3 text-right">
+                  <td className="py-2.5 text-right font-sans">
                     <Link
                       href="/dashboard/playground"
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs transition"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 text-xs transition-colors"
                     >
-                      <Play className="size-3 text-cyan-400" />
+                      <Play className="size-3 text-zinc-400" />
                       <span>Test</span>
                     </Link>
                   </td>

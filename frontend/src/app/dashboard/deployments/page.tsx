@@ -6,7 +6,7 @@ import {
   Copy,
   Pause,
   Play,
-  Rocket,
+  Plus,
   Terminal,
 } from "lucide-react";
 
@@ -89,7 +89,6 @@ export default function DeploymentsPage() {
   const [showDeployModal, setShowDeployModal] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // New deployment form fields
   const [depName, setDepName] = useState("");
   const [depModel, setDepModel] = useState("meta-llama/Llama-3.3-70B-Instruct");
   const [depEngine, setDepEngine] = useState<"vLLM" | "SGLang" | "TensorRT-LLM">("vLLM");
@@ -113,7 +112,7 @@ export default function DeploymentsPage() {
     const url = `http://localhost:${port}/v1/chat/completions`;
     navigator.clipboard?.writeText(url);
     setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+    setTimeout(() => setCopiedId(null), 1500);
   };
 
   const handleCreateDeployment = (e: React.FormEvent) => {
@@ -143,152 +142,130 @@ export default function DeploymentsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-zinc-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800/80">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-            Inference Deployments
+          <h1 className="text-xl font-semibold text-white tracking-tight">
+            Serving deployments
           </h1>
-          <p className="text-zinc-400 text-sm mt-1">
-            Production serving endpoints running vLLM, SGLang, and TensorRT-LLM runtimes.
+          <p className="text-xs text-zinc-400 mt-0.5">
+            Active vLLM, SGLang, and TensorRT-LLM endpoints
           </p>
         </div>
 
         <button
           onClick={() => setShowDeployModal(true)}
-          className="px-3.5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-medium flex items-center gap-1.5 transition shadow-sm self-start sm:self-auto"
+          className="h-8 px-3 rounded-md bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-medium flex items-center gap-1.5 transition-colors self-start sm:self-auto"
         >
-          <Rocket className="size-3.5" />
-          <span>Launch Serving Instance</span>
+          <Plus className="size-3.5" />
+          <span>Launch deployment</span>
         </button>
       </div>
 
       {/* Deployments List */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {deployments.map((dep) => (
           <div
             key={dep.id}
-            className="p-5 rounded-xl bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700/80 transition space-y-4"
+            className="p-4 rounded-lg border border-zinc-800/80 bg-zinc-900/40 space-y-3"
           >
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div className="space-y-1">
-                <div className="flex items-center gap-3">
-                  <h3 className="font-semibold text-white text-base">
+                <div className="flex items-center gap-2.5">
+                  <h3 className="font-medium text-white text-sm">
                     {dep.name}
                   </h3>
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium font-mono ${
-                      dep.status === "running"
-                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                        : dep.status === "scaling"
-                        ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                        : "bg-zinc-800 text-zinc-400 border border-zinc-700"
-                    }`}
-                  >
+                  <span className="inline-flex items-center gap-1.5 text-xs font-mono">
                     <span
                       className={`size-1.5 rounded-full ${
                         dep.status === "running"
-                          ? "bg-emerald-400 animate-pulse"
+                          ? "bg-emerald-500"
                           : dep.status === "scaling"
-                          ? "bg-amber-400 animate-ping"
-                          : "bg-zinc-500"
+                          ? "bg-amber-500"
+                          : "bg-zinc-600"
                       }`}
                     />
-                    {dep.status.toUpperCase()}
+                    <span className="text-zinc-400">{dep.status}</span>
                   </span>
 
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-zinc-800 text-cyan-400 border border-zinc-700 font-mono font-medium">
+                  <span className="text-[11px] px-2 py-0.5 rounded border border-zinc-800 bg-zinc-900 text-zinc-300 font-mono">
                     {dep.engine}
                   </span>
                 </div>
-                <p className="text-xs text-zinc-400 font-mono">
+                <p className="text-xs text-zinc-500 font-mono">
                   {dep.model}
                 </p>
               </div>
 
-              {/* Endpoint Quick Copy & Test */}
+              {/* Endpoint Copy & Test */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleCopyEndpoint(dep.port, dep.id)}
-                  className="px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 hover:border-zinc-700 text-zinc-300 text-xs font-mono flex items-center gap-1.5 transition"
-                  title="Copy OpenAI-compatible URL"
+                  className="h-7 px-2.5 rounded border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-mono flex items-center gap-1.5 transition-colors"
+                  title="Copy URL"
                 >
                   <Copy className="size-3 text-zinc-500" />
                   <span>:{dep.port}/v1</span>
                   {copiedId === dep.id && (
-                    <span className="text-[10px] text-emerald-400 font-sans ml-1">
-                      Copied!
+                    <span className="text-[10px] text-emerald-400 font-sans">
+                      copied
                     </span>
                   )}
                 </button>
 
                 <Link
                   href="/dashboard/playground"
-                  className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1.5 transition"
+                  className="h-7 px-2.5 rounded border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-medium flex items-center gap-1.5 transition-colors"
                 >
-                  <Terminal className="size-3 text-cyan-400" />
-                  <span>Playground</span>
+                  <Terminal className="size-3 text-zinc-400" />
+                  <span>Test</span>
                 </Link>
 
                 <button
                   onClick={() => handleToggleStatus(dep.id)}
-                  className={`p-1.5 rounded-lg text-xs transition border ${
-                    dep.status === "running"
-                      ? "bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20"
-                      : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
-                  }`}
-                  title={dep.status === "running" ? "Pause Serving" : "Start Serving"}
+                  className="h-7 w-7 rounded border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors"
+                  title={dep.status === "running" ? "Pause" : "Start"}
                 >
                   {dep.status === "running" ? (
-                    <Pause className="size-4" />
+                    <Pause className="size-3.5" />
                   ) : (
-                    <Play className="size-4" />
+                    <Play className="size-3.5" />
                   )}
                 </button>
               </div>
             </div>
 
-            {/* Metrics & Parameters Breakdown */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 pt-3 border-t border-zinc-800/80 text-xs">
-              <div className="flex flex-col">
-                <span className="text-[11px] text-zinc-500">Tensor Parallel</span>
-                <span className="text-zinc-200 font-mono font-medium">
-                  TP = {dep.tensorParallel} GPUs
-                </span>
+            {/* Metrics Breakdown */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 pt-3 border-t border-zinc-800/80 text-xs font-mono">
+              <div>
+                <span className="text-[11px] text-zinc-500 font-sans">Parallelism</span>
+                <div className="text-zinc-300">TP={dep.tensorParallel}</div>
               </div>
 
-              <div className="flex flex-col">
-                <span className="text-[11px] text-zinc-500">GPU Hardware</span>
-                <span className="text-zinc-200 font-mono font-medium truncate">
-                  {dep.gpuType}
-                </span>
+              <div>
+                <span className="text-[11px] text-zinc-500 font-sans">Hardware</span>
+                <div className="text-zinc-300 truncate">{dep.gpuType}</div>
               </div>
 
-              <div className="flex flex-col">
-                <span className="text-[11px] text-zinc-500">Max Context Len</span>
-                <span className="text-zinc-200 font-mono font-medium">
-                  {dep.maxModelLen.toLocaleString()} tokens
-                </span>
+              <div>
+                <span className="text-[11px] text-zinc-500 font-sans">Max context</span>
+                <div className="text-zinc-300 tabular-nums">
+                  {dep.maxModelLen.toLocaleString()}
+                </div>
               </div>
 
-              <div className="flex flex-col">
-                <span className="text-[11px] text-zinc-500">KV Cache Usage</span>
-                <span className="text-zinc-200 font-mono font-medium">
-                  {dep.kvCacheUsage}%
-                </span>
+              <div>
+                <span className="text-[11px] text-zinc-500 font-sans">KV cache</span>
+                <div className="text-zinc-300 tabular-nums">{dep.kvCacheUsage}%</div>
               </div>
 
-              <div className="flex flex-col">
-                <span className="text-[11px] text-zinc-500">Current QPS</span>
-                <span className="text-zinc-200 font-mono font-medium">
-                  {dep.qps} req/s
-                </span>
+              <div>
+                <span className="text-[11px] text-zinc-500 font-sans">Throughput</span>
+                <div className="text-zinc-300 tabular-nums">{dep.qps} rps</div>
               </div>
 
-              <div className="flex flex-col">
-                <span className="text-[11px] text-zinc-500">Active Workers</span>
-                <span className="text-zinc-200 font-mono font-medium">
-                  {dep.replicas} instance
-                </span>
+              <div>
+                <span className="text-[11px] text-zinc-500 font-sans">Replicas</span>
+                <div className="text-zinc-300 tabular-nums">{dep.replicas}</div>
               </div>
             </div>
           </div>
@@ -298,11 +275,10 @@ export default function DeploymentsPage() {
       {/* Launch Deployment Modal */}
       {showDeployModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-4">
+          <div className="w-full max-w-lg bg-zinc-900 border border-zinc-800 rounded-lg p-5 space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
-              <h3 className="font-semibold text-white text-base flex items-center gap-2">
-                <Rocket className="size-4 text-cyan-400" />
-                Launch InferX Serving Engine
+              <h3 className="font-medium text-white text-sm">
+                Launch serving engine
               </h3>
               <button
                 onClick={() => setShowDeployModal(false)}
@@ -314,28 +290,28 @@ export default function DeploymentsPage() {
 
             <form onSubmit={handleCreateDeployment} className="space-y-4 text-xs">
               <div>
-                <label className="block text-zinc-300 font-medium mb-1">
-                  Deployment Name
+                <label className="block text-zinc-400 mb-1">
+                  Deployment name
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. prod-llama-3-3-70b"
+                  placeholder="prod-llama-3-3-70b"
                   value={depName}
                   onChange={(e) => setDepName(e.target.value)}
                   required
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-200 focus:outline-none focus:border-cyan-500 font-mono"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-3 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-700 font-mono"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-zinc-300 font-medium mb-1">
-                    Model Weights
+                  <label className="block text-zinc-400 mb-1">
+                    Model
                   </label>
                   <select
                     value={depModel}
                     onChange={(e) => setDepModel(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-200 focus:outline-none focus:border-cyan-500 font-mono text-[11px]"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-3 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-700 font-mono text-[11px]"
                   >
                     <option value="meta-llama/Llama-3.3-70B-Instruct">
                       meta-llama/Llama-3.3-70B-Instruct
@@ -353,8 +329,8 @@ export default function DeploymentsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-zinc-300 font-medium mb-1">
-                    Serving Engine
+                  <label className="block text-zinc-400 mb-1">
+                    Engine
                   </label>
                   <select
                     value={depEngine}
@@ -363,24 +339,24 @@ export default function DeploymentsPage() {
                         e.target.value as "vLLM" | "SGLang" | "TensorRT-LLM"
                       )
                     }
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-200 focus:outline-none focus:border-cyan-500 font-mono"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-3 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-700 font-mono"
                   >
-                    <option value="vLLM">vLLM (PagedAttention, Chunked Prefill)</option>
-                    <option value="SGLang">SGLang (RadixAttention, Fast Router)</option>
-                    <option value="TensorRT-LLM">TensorRT-LLM (NVIDIA Optimized)</option>
+                    <option value="vLLM">vLLM</option>
+                    <option value="SGLang">SGLang</option>
+                    <option value="TensorRT-LLM">TensorRT-LLM</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-zinc-300 font-medium mb-1">
-                    Tensor Parallel (TP)
+                  <label className="block text-zinc-400 mb-1">
+                    TP GPUs
                   </label>
                   <select
                     value={depTP}
                     onChange={(e) => setDepTP(Number(e.target.value))}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-200 focus:outline-none focus:border-cyan-500 font-mono"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-3 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-700 font-mono"
                   >
                     <option value={1}>1 GPU</option>
                     <option value={2}>2 GPUs</option>
@@ -390,51 +366,43 @@ export default function DeploymentsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-zinc-300 font-medium mb-1">
+                  <label className="block text-zinc-400 mb-1">
                     Port
                   </label>
                   <input
                     type="number"
                     value={depPort}
                     onChange={(e) => setDepPort(Number(e.target.value))}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-200 focus:outline-none focus:border-cyan-500 font-mono"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-3 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-700 font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-zinc-300 font-medium mb-1">
-                    Max Tokens
+                  <label className="block text-zinc-400 mb-1">
+                    Max context
                   </label>
                   <input
                     type="number"
                     value={depMaxLen}
                     onChange={(e) => setDepMaxLen(Number(e.target.value))}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-200 focus:outline-none focus:border-cyan-500 font-mono"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-3 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-700 font-mono"
                   />
                 </div>
-              </div>
-
-              <div className="p-3 rounded-lg bg-zinc-950 border border-zinc-800/80 text-[11px] text-zinc-400 space-y-1">
-                <span className="text-zinc-200 font-medium">Automatic OpenAI API Compatibility:</span>
-                <p>
-                  Serves standard endpoints: <code className="text-cyan-400">/v1/chat/completions</code>,{" "}
-                  <code className="text-cyan-400">/v1/completions</code>, and <code className="text-cyan-400">/v1/models</code>.
-                </p>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowDeployModal(false)}
-                  className="px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium"
+                  className="px-3 py-1.5 rounded-md border border-zinc-800 bg-zinc-900 text-zinc-300 text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-medium"
+                  className="px-3.5 py-1.5 rounded-md bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-medium"
                 >
-                  Start Engine
+                  Start engine
                 </button>
               </div>
             </form>

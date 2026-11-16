@@ -1,161 +1,210 @@
 import Link from "next/link";
-import {
-  Activity,
-  ArrowRight,
-  Flame,
-  Gauge,
-  Server,
-  Terminal,
-  Zap,
-} from "lucide-react";
+import { ArrowRight, Cpu, Gauge, Server, Terminal, Zap } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-black">
-      {/* Top Navigation */}
-      <header className="border-b border-zinc-800/80 bg-zinc-950/70 backdrop-blur-md sticky top-0 z-50 px-6 h-16 flex items-center justify-between">
+    <div className="min-h-screen bg-[#09090b] text-zinc-100 font-sans flex flex-col antialiased">
+      {/* Quiet Navigation */}
+      <header className="border-b border-zinc-800/80 px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="size-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <Zap className="size-5 text-white" />
+          <div className="size-7 rounded-md bg-zinc-800 border border-zinc-700/80 flex items-center justify-center">
+            <Zap className="size-4 text-zinc-200" />
           </div>
-          <span className="font-bold tracking-tight text-lg text-white flex items-center gap-2">
-            Infer<span className="text-cyan-400">X</span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400">
-              v0.4.2
-            </span>
+          <span className="font-medium tracking-tight text-white text-sm">
+            InferX
+          </span>
+          <span className="text-[11px] font-mono text-zinc-500 pl-2 border-l border-zinc-800">
+            v0.4.2
           </span>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-300">
-            <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>vLLM Engine Ready</span>
-          </div>
-
+        <nav className="flex items-center gap-6 text-xs">
           <Link
-            href="/dashboard"
-            className="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-medium flex items-center gap-2 transition shadow-sm"
+            href="/dashboard/models"
+            className="text-zinc-400 hover:text-zinc-200 transition-colors"
           >
-            <span>Launch Console</span>
-            <ArrowRight className="size-3.5" />
+            Models
           </Link>
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 py-20 text-center max-w-5xl mx-auto space-y-10">
-        <div className="space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-mono text-cyan-400">
-            <Flame className="size-3.5" />
-            <span>Continuous Batching & PagedAttention Orchestrator</span>
-          </div>
-
-          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">
-            Self-Hosted High-Performance <br className="hidden sm:inline" />
-            <span className="bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
-              LLM Inference Platform
-            </span>
-          </h1>
-
-          <p className="max-w-2xl mx-auto text-zinc-400 text-sm sm:text-base leading-relaxed">
-            A unified control plane to register models, manage multi-GPU serving instances,
-            stream tokens via OpenAI-compatible endpoints, execute controlled load benchmarks,
-            and monitor real-time KV cache telemetry.
-          </p>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-center gap-3">
           <Link
-            href="/dashboard"
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-cyan-900/20"
+            href="/dashboard/benchmarks"
+            className="text-zinc-400 hover:text-zinc-200 transition-colors"
           >
-            <span>Open Dashboard Console</span>
-            <ArrowRight className="size-4" />
+            Benchmarks
           </Link>
-
           <Link
             href="/dashboard/playground"
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 font-medium text-sm flex items-center justify-center gap-2 transition"
+            className="text-zinc-400 hover:text-zinc-200 transition-colors"
           >
-            <Terminal className="size-4 text-cyan-400" />
-            <span>Test in Playground</span>
+            Playground
           </Link>
-        </div>
+          <Link
+            href="/dashboard"
+            className="h-8 px-3 rounded-md bg-zinc-100 hover:bg-white text-zinc-950 font-medium flex items-center gap-1.5 transition-colors"
+          >
+            <span>Launch console</span>
+            <ArrowRight className="size-3.5" />
+          </Link>
+        </nav>
+      </header>
 
-        {/* Core Architecture Matrix */}
-        <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 pt-12 text-left">
-          <div className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700/80 transition space-y-2.5">
-            <div className="size-9 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
-              <Server className="size-5" />
-            </div>
-            <h3 className="font-semibold text-white text-base">
-              Multi-Engine Runtimes
-            </h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              First-class support for vLLM, SGLang, and TensorRT-LLM with automated
-              tensor parallelism, chunked prefill, and dynamic memory allocation.
-            </p>
+      {/* Main Hero & Live Product Preview */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-16 space-y-16">
+        <div className="max-w-3xl space-y-5">
+          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded border border-zinc-800 bg-zinc-900/60 text-xs font-mono text-zinc-400">
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+            <span>Engine ready • vLLM 0.6.3</span>
           </div>
 
-          <div className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700/80 transition space-y-2.5">
-            <div className="size-9 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
-              <Gauge className="size-5" />
-            </div>
-            <h3 className="font-semibold text-white text-base">
-              Controlled Benchmarking
-            </h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Run synthetic load sweeps across concurrency tiers (1–128 clients).
-              Accurately measure TTFT, ITL, P50/P99 latency, and tokens/sec throughput.
-            </p>
-          </div>
+          <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-white leading-[1.15]">
+            Self-hosted serving, continuous batching, and GPU instrumentation
+          </h1>
 
-          <div className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700/80 transition space-y-2.5">
-            <div className="size-9 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
-              <Activity className="size-5" />
-            </div>
-            <h3 className="font-semibold text-white text-base">
-              KV Cache & Telemetry
-            </h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Monitor RadixAttention hit rates, GPU memory fragmentation, block manager
-              allocations, and token consumption metrics in real-time.
-            </p>
-          </div>
-        </div>
-
-        {/* Lifecycle Flow */}
-        <div className="w-full p-6 rounded-2xl bg-zinc-900/40 border border-zinc-800/80 text-left space-y-4">
-          <p className="text-xs font-mono uppercase tracking-wider text-zinc-500">
-            Engine Lifecycle Journey
+          <p className="text-zinc-400 text-sm sm:text-base leading-relaxed max-w-2xl">
+            A unified control plane to deploy open-weights LLMs across GPU clusters, route
+            OpenAI-compatible chat completions, execute synthetic load benchmarks, and monitor
+            KV cache allocations.
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 text-center text-xs font-mono">
-            {[
-              "Register",
-              "Configure",
-              "Deploy",
-              "Serve",
-              "Stream",
-              "Benchmark",
-              "Monitor",
-              "Analyze",
-            ].map((step, idx) => (
-              <div
-                key={step}
-                className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-300 flex flex-col items-center justify-center gap-1"
-              >
-                <span className="text-[10px] text-cyan-400">0{idx + 1}</span>
-                <span className="font-medium">{step}</span>
+
+          <div className="flex items-center gap-3 pt-2">
+            <Link
+              href="/dashboard"
+              className="h-9 px-4 rounded-md bg-zinc-100 hover:bg-white text-zinc-950 font-medium text-xs flex items-center gap-1.5 transition-colors"
+            >
+              <span>Open dashboard</span>
+              <ArrowRight className="size-3.5" />
+            </Link>
+
+            <Link
+              href="/dashboard/playground"
+              className="h-9 px-4 rounded-md bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 font-medium text-xs flex items-center gap-1.5 transition-colors"
+            >
+              <Terminal className="size-3.5 text-zinc-400" />
+              <span>Inference playground</span>
+            </Link>
+          </div>
+        </div>
+
+        {/* Real Product Telemetry Preview */}
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-800/80 text-xs font-mono">
+            <div className="flex items-center gap-2 text-zinc-300">
+              <span className="size-2 rounded-full bg-emerald-500" />
+              <span className="font-medium text-white">cluster-node-01</span>
+              <span className="text-zinc-500">8x NVIDIA H100 80GB SXM5</span>
+            </div>
+            <div className="flex items-center gap-4 text-zinc-400">
+              <span>Driver: 550.54.14</span>
+              <span>CUDA: 12.4</span>
+              <span>Memory: 482 / 640 GB</span>
+            </div>
+          </div>
+
+          {/* Precision Metrics Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="p-3.5 rounded-lg border border-zinc-800/80 bg-zinc-950/60">
+              <div className="text-xs text-zinc-500">Serving throughput</div>
+              <div className="text-xl font-medium text-white font-mono tabular-nums mt-1">
+                5,420 <span className="text-xs text-zinc-500 font-sans">tok/s</span>
               </div>
-            ))}
+              <div className="text-[11px] text-zinc-400 font-mono mt-1">
+                p99: 42 tok/s
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-lg border border-zinc-800/80 bg-zinc-950/60">
+              <div className="text-xs text-zinc-500">Time to first token</div>
+              <div className="text-xl font-medium text-white font-mono tabular-nums mt-1">
+                14.8 <span className="text-xs text-zinc-500 font-sans">ms</span>
+              </div>
+              <div className="text-[11px] text-zinc-400 font-mono mt-1">
+                itl: 6.8 ms
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-lg border border-zinc-800/80 bg-zinc-950/60">
+              <div className="text-xs text-zinc-500">Active deployments</div>
+              <div className="text-xl font-medium text-white font-mono tabular-nums mt-1">
+                4 <span className="text-xs text-zinc-500 font-sans">instances</span>
+              </div>
+              <div className="text-[11px] text-zinc-400 font-mono mt-1">
+                tp=4 • vLLM + SGLang
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-lg border border-zinc-800/80 bg-zinc-950/60">
+              <div className="text-xs text-zinc-500">KV cache hit rate</div>
+              <div className="text-xl font-medium text-white font-mono tabular-nums mt-1">
+                88.4%
+              </div>
+              <div className="text-[11px] text-zinc-400 font-mono mt-1">
+                prefix caching active
+              </div>
+            </div>
+          </div>
+
+          {/* Active Serving Process Row */}
+          <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/60 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
+            <div className="space-y-0.5">
+              <div className="text-white font-medium">
+                meta-llama/Llama-3.3-70B-Instruct
+              </div>
+              <div className="text-zinc-500 text-[11px]">
+                Port 8000 • FP8 • Tensor Parallel 4 • PagedAttention
+              </div>
+            </div>
+            <div className="flex items-center gap-4 text-zinc-400">
+              <span className="tabular-nums">184.2 req/s</span>
+              <span className="text-emerald-400">healthy</span>
+              <Link
+                href="/dashboard/playground"
+                className="text-zinc-200 hover:text-white underline underline-offset-4"
+              >
+                test endpoint &rarr;
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Technical Architecture Pillars */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-white text-sm font-medium">
+              <Server className="size-4 text-zinc-400" />
+              <span>Multi-engine runtimes</span>
+            </div>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Coordinate vLLM, SGLang, and TensorRT-LLM processes. Configure tensor
+              parallelism, KV cache block size, and chunked prefill per model.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-white text-sm font-medium">
+              <Gauge className="size-4 text-zinc-400" />
+              <span>Controlled benchmarks</span>
+            </div>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Run synthetic client sweeps across concurrency levels (1–128). Measure TTFT,
+              inter-token latency, and tokens per second under Poisson distributions.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-white text-sm font-medium">
+              <Cpu className="size-4 text-zinc-400" />
+              <span>Hardware telemetry</span>
+            </div>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Real-time monitoring of GPU compute utilization, VRAM allocations,
+              temperature, power draw, and memory bandwidth via NVIDIA DCGM.
+            </p>
           </div>
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-zinc-800/80 py-6 px-6 text-center text-xs text-zinc-500">
-        <p>InferX • Enterprise-Grade Self-Hosted LLM Inference Platform</p>
+      {/* Quiet Footer */}
+      <footer className="border-t border-zinc-800/80 px-6 py-6 text-center text-xs text-zinc-500 font-mono">
+        InferX • Self-hosted LLM inference control plane
       </footer>
     </div>
   );

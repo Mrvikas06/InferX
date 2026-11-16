@@ -4,27 +4,27 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  Box,
-  Server,
-  Terminal,
-  Gauge,
-  LineChart,
-  Zap,
-  Cpu,
-  Menu,
-  X,
-  ChevronRight,
-  ExternalLink,
-  ShieldCheck,
   Activity,
+  Box,
+  ChevronRight,
+  Cpu,
+  ExternalLink,
+  Gauge,
+  LayoutDashboard,
+  LineChart,
+  Menu,
+  Server,
+  ShieldCheck,
+  Terminal,
+  X,
+  Zap,
 } from "lucide-react";
 
 interface NavItem {
   title: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  badge?: string;
+  count?: number;
 }
 
 const navItems: NavItem[] = [
@@ -37,13 +37,13 @@ const navItems: NavItem[] = [
     title: "Models",
     href: "/dashboard/models",
     icon: Box,
-    badge: "12",
+    count: 6,
   },
   {
     title: "Deployments",
     href: "/dashboard/deployments",
     icon: Server,
-    badge: "Active",
+    count: 4,
   },
   {
     title: "Playground",
@@ -78,70 +78,65 @@ export default function DashboardLayout({
     )?.title || "Dashboard";
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col antialiased">
-      {/* Top Header */}
-      <header className="sticky top-0 z-40 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md px-4 sm:px-6 h-14 flex items-center justify-between">
+    <div className="min-h-screen bg-[#09090b] text-zinc-100 flex flex-col font-sans antialiased">
+      {/* Quiet Top Header */}
+      <header className="sticky top-0 z-40 border-b border-zinc-800/80 bg-[#09090b]/90 backdrop-blur-sm px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+            className="md:hidden p-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800/60"
             aria-label="Toggle navigation"
           >
-            {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            {mobileMenuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
           </button>
 
-          <Link href="/dashboard" className="flex items-center gap-2 group">
-            <div className="size-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-              <Zap className="size-4 text-white font-bold" />
+          <Link href="/dashboard" className="flex items-center gap-2.5">
+            <div className="size-7 rounded-md bg-zinc-800 border border-zinc-700/80 flex items-center justify-center">
+              <Zap className="size-4 text-zinc-200" />
             </div>
-            <div className="flex flex-col">
-              <span className="font-bold tracking-tight text-white flex items-center gap-1.5 text-base">
-                Infer<span className="text-cyan-400">X</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/50">
-                  v0.4.2
-                </span>
-              </span>
-            </div>
+            <span className="font-medium tracking-tight text-white text-sm">
+              InferX
+            </span>
           </Link>
 
-          <div className="hidden sm:flex items-center gap-2 text-zinc-500 text-sm ml-4 pl-4 border-l border-zinc-800">
+          <div className="hidden sm:flex items-center gap-2 text-zinc-500 text-xs ml-4 pl-4 border-l border-zinc-800">
             <span>Console</span>
-            <ChevronRight className="size-3.5 text-zinc-600" />
+            <ChevronRight className="size-3 text-zinc-600" />
             <span className="text-zinc-200 font-medium">{currentPageTitle}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 sm:gap-4">
-          <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono">
-            <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Engine: vLLM 0.6.3 (Online)</span>
+        <div className="flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded border border-zinc-800 bg-zinc-900/60 text-zinc-300 text-xs font-mono">
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+            <span>vLLM 0.6.3</span>
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs">
-            <Cpu className="size-3.5 text-cyan-400" />
+          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded border border-zinc-800 bg-zinc-900/60 text-zinc-400 text-xs font-mono">
+            <Cpu className="size-3.5 text-zinc-400" />
             <span>8x H100 SXM5</span>
           </div>
 
           <Link
             href="/dashboard/playground"
-            className="text-xs px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-medium transition shadow-sm flex items-center gap-1.5"
+            className="h-8 px-3 rounded-md bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-medium flex items-center gap-1.5 transition-colors"
           >
             <Terminal className="size-3.5" />
-            <span className="hidden sm:inline">Open</span> Playground
+            <span>Playground</span>
           </Link>
         </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar Desktop */}
-        <aside className="hidden md:flex flex-col w-64 border-r border-zinc-800/80 bg-zinc-950/60 p-4 shrink-0 justify-between">
+        {/* Quiet Desktop Sidebar */}
+        <aside className="hidden md:flex flex-col w-60 border-r border-zinc-800/80 bg-[#09090b] p-4 shrink-0 justify-between">
           <div className="space-y-6">
             <div>
-              <p className="px-3 text-[11px] font-semibold tracking-wider uppercase text-zinc-500 mb-2 font-mono">
+              <p className="px-2.5 text-xs text-zinc-500 mb-2 font-medium">
                 Platform
               </p>
-              <nav className="space-y-1">
+              <nav className="space-y-0.5">
                 {navItems.map((item) => {
                   const isActive =
                     item.href === "/dashboard"
@@ -153,29 +148,27 @@ export default function DashboardLayout({
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      className={`flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs transition-colors h-8 ${
                         isActive
-                          ? "bg-zinc-800 text-cyan-400 shadow-sm"
-                          : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900"
+                          ? "bg-zinc-800 text-white font-medium"
+                          : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
                       }`}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2.5">
                         <Icon
                           className={`size-4 ${
-                            isActive ? "text-cyan-400" : "text-zinc-400"
+                            isActive ? "text-zinc-100" : "text-zinc-400"
                           }`}
                         />
                         <span>{item.title}</span>
                       </div>
-                      {item.badge && (
+                      {item.count !== undefined && (
                         <span
-                          className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
-                            isActive
-                              ? "bg-cyan-950 text-cyan-300 border border-cyan-800/60"
-                              : "bg-zinc-900 text-zinc-400 border border-zinc-800"
+                          className={`text-[11px] font-mono tabular-nums ${
+                            isActive ? "text-zinc-300" : "text-zinc-500"
                           }`}
                         >
-                          {item.badge}
+                          {item.count}
                         </span>
                       )}
                     </Link>
@@ -184,47 +177,52 @@ export default function DashboardLayout({
               </nav>
             </div>
 
+            {/* Instrument Telemetry Strip */}
             <div>
-              <p className="px-3 text-[11px] font-semibold tracking-wider uppercase text-zinc-500 mb-2 font-mono">
-                System Health
+              <p className="px-2.5 text-xs text-zinc-500 mb-2 font-medium">
+                Cluster telemetry
               </p>
-              <div className="p-3 rounded-lg bg-zinc-900/60 border border-zinc-800/80 space-y-2.5 text-xs">
+              <div className="p-3 rounded-lg border border-zinc-800/80 bg-zinc-900/30 space-y-2.5 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-zinc-400 flex items-center gap-1.5">
-                    <Activity className="size-3.5 text-emerald-400" />
-                    GPU Cluster
+                    <Activity className="size-3 text-emerald-500" />
+                    GPU health
                   </span>
-                  <span className="text-emerald-400 font-mono text-[11px]">99.98%</span>
+                  <span className="text-zinc-200 font-mono text-[11px] tabular-nums">
+                    99.98%
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-zinc-400">VRAM Alloc</span>
-                  <span className="text-zinc-200 font-mono">482 / 640 GB</span>
+                  <span className="text-zinc-500">VRAM alloc</span>
+                  <span className="text-zinc-300 font-mono text-[11px] tabular-nums">
+                    482 / 640 GB
+                  </span>
                 </div>
-                <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                <div className="w-full bg-zinc-800 rounded-full h-1 overflow-hidden">
                   <div
-                    className="bg-gradient-to-r from-cyan-500 to-indigo-500 h-1.5 rounded-full"
+                    className="bg-zinc-300 h-1 rounded-full"
                     style={{ width: "75%" }}
                   />
                 </div>
-                <div className="flex items-center justify-between text-[11px] pt-1 text-zinc-400 border-t border-zinc-800/60">
-                  <span>Inference QPS</span>
-                  <span className="text-zinc-200 font-mono font-medium">3,420 rps</span>
+                <div className="flex items-center justify-between text-[11px] pt-1 text-zinc-500 border-t border-zinc-800/60 font-mono">
+                  <span>Aggregate QPS</span>
+                  <span className="text-zinc-300 tabular-nums">3,420 rps</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Sidebar Footer */}
-          <div className="pt-4 border-t border-zinc-800/80 flex flex-col gap-2">
+          {/* Quiet Sidebar Footer */}
+          <div className="pt-3 border-t border-zinc-800/80">
             <a
-              href="https://github.com"
+              href="https://github.com/Mrvikas06/InferX"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-between px-3 py-2 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 rounded-lg transition"
+              className="flex items-center justify-between px-2.5 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 rounded-md transition-colors"
             >
               <div className="flex items-center gap-2">
                 <ShieldCheck className="size-3.5 text-zinc-400" />
-                <span>API Docs & Spec</span>
+                <span>API spec</span>
               </div>
               <ExternalLink className="size-3 text-zinc-500" />
             </a>
@@ -238,25 +236,25 @@ export default function DashboardLayout({
             onClick={() => setMobileMenuOpen(false)}
           >
             <div
-              className="w-72 bg-zinc-950 border-r border-zinc-800 h-full p-4 flex flex-col justify-between"
+              className="w-64 bg-[#09090b] border-r border-zinc-800 h-full p-4 flex flex-col justify-between"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
                   <div className="flex items-center gap-2">
-                    <div className="size-7 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-500 flex items-center justify-center">
-                      <Zap className="size-3.5 text-white" />
+                    <div className="size-6 rounded bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+                      <Zap className="size-3.5 text-zinc-200" />
                     </div>
-                    <span className="font-bold text-white text-base">InferX</span>
+                    <span className="font-medium text-white text-sm">InferX</span>
                   </div>
                   <button
                     onClick={() => setMobileMenuOpen(false)}
                     className="p-1 rounded text-zinc-400 hover:text-white"
                   >
-                    <X className="size-5" />
+                    <X className="size-4" />
                   </button>
                 </div>
-                <nav className="space-y-1">
+                <nav className="space-y-0.5">
                   {navItems.map((item) => {
                     const isActive =
                       item.href === "/dashboard"
@@ -269,19 +267,19 @@ export default function DashboardLayout({
                         key={item.href}
                         href={item.href}
                         onClick={() => setMobileMenuOpen(false)}
-                        className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium ${
+                        className={`flex items-center justify-between px-2.5 py-2 rounded-md text-xs ${
                           isActive
-                            ? "bg-zinc-800 text-cyan-400"
+                            ? "bg-zinc-800 text-white font-medium"
                             : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900"
                         }`}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2.5">
                           <Icon className="size-4" />
                           <span>{item.title}</span>
                         </div>
-                        {item.badge && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-900 text-zinc-400 border border-zinc-800 font-mono">
-                            {item.badge}
+                        {item.count !== undefined && (
+                          <span className="text-[11px] font-mono text-zinc-500">
+                            {item.count}
                           </span>
                         )}
                       </Link>
@@ -290,20 +288,16 @@ export default function DashboardLayout({
                 </nav>
               </div>
 
-              <div className="p-3 rounded-lg bg-zinc-900/60 border border-zinc-800 text-xs text-zinc-400">
-                <p className="font-medium text-zinc-200">Cluster Status</p>
-                <p className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1.5">
-                  <span className="size-1.5 rounded-full bg-emerald-400" />
-                  Healthy • 8x H100 SXM5
-                </p>
+              <div className="p-3 rounded border border-zinc-800 text-xs text-zinc-500 font-mono">
+                cluster-01 • healthy
               </div>
             </div>
           </div>
         )}
 
-        {/* Main Content Viewport */}
-        <main className="flex-1 overflow-y-auto bg-zinc-950 p-4 sm:p-6 lg:p-8">
-          <div className="max-w-7xl mx-auto space-y-6">{children}</div>
+        {/* Content Viewport */}
+        <main className="flex-1 overflow-y-auto bg-[#09090b] p-6 lg:p-8">
+          <div className="max-w-6xl mx-auto space-y-6">{children}</div>
         </main>
       </div>
     </div>
