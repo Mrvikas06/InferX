@@ -31,15 +31,26 @@ async def test_liveness_endpoint(async_client: AsyncClient):
     assert data["app"] == "InferX"
 
 
+from unittest.mock import AsyncMock, patch
+
+
 @pytest.mark.asyncio
 async def test_readiness_endpoint(async_client: AsyncClient):
-    """Verify /health/ready readiness probe."""
-    response = await async_client.get("/health/ready")
-    assert response.status_code == 200
+    """Verify /health/ready readiness probe with live and mocked dependencies."""
+    # Test with mocked healthy dependencies
+    with patch("backend.app.api.v1.health.check_db_health", new_callable=AsyncMock) as mock_db, \
+         patch("backend.app.api.v1.health.check_redis_health", new_callable=AsyncMock) as mock_redis:
+        mock_db.return_value = True
+        mock_redis.return_value = True
 
-    data = response.json()
-    assert data["status"] == "ready"
-    assert "runtime" in data["components"]
+        response = await async_client.get("/health/ready")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["status"] == "ready"
+        assert "runtime" in data["components"]
+        assert data["components"]["database"]["status"] == "healthy"
+        assert data["components"]["redis"]["status"] == "healthy"
 
 
 @pytest.mark.asyncio
