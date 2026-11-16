@@ -120,12 +120,13 @@ export default function PlaygroundPage() {
   const activeModelObj =
     sampleModels.find((m) => m.id === selectedModel) || sampleModels[0];
 
+  const sanitizedSystemPrompt = systemPrompt.replace(/"/g, '\\"').replace(/\n/g, "\\n");
   const curlCode = `curl http://localhost:${activeModelObj.port}/v1/chat/completions \\
   -H "Content-Type: application/json" \\
   -d '{
     "model": "${selectedModel}",
     "messages": [
-      {"role": "system", "content": "${systemPrompt.replace(/"/g, '\\"')}"},
+      {"role": "system", "content": "${sanitizedSystemPrompt}"},
       {"role": "user", "content": "Explain KV Cache optimization in vLLM"}
     ],
     "temperature": ${temperature},
@@ -136,54 +137,54 @@ export default function PlaygroundPage() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
+      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-zinc-800/80">
         <div>
-          <h1 className="text-xl font-semibold text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
             Inference playground
           </h1>
-          <p className="text-xs text-zinc-400 mt-0.5">
-            Evaluate prompt completions, token streaming rates, and parameters
+          <p className="text-sm text-zinc-400 mt-1">
+            Evaluate prompt completions, token streaming rates, and serving parameters
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={() => setShowCurlModal(true)}
-            className="h-8 px-3 rounded-md border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-medium flex items-center gap-1.5 transition-colors"
+            className="h-9 px-3.5 rounded-md border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 text-sm font-medium flex items-center gap-2 transition-colors"
           >
-            <Code2 className="size-3.5 text-zinc-400" />
+            <Code2 className="size-4 text-zinc-400" />
             <span>Export cURL</span>
           </button>
           <button
             onClick={handleClear}
-            className="h-8 w-8 rounded-md border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors"
+            className="h-9 w-9 rounded-md border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors"
             title="Clear history"
           >
-            <Trash2 className="size-3.5" />
+            <Trash2 className="size-4" />
           </button>
         </div>
       </div>
 
       {/* Grid: Parameters + Chat */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[calc(100vh-14rem)] min-h-[520px]">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[calc(100vh-14rem)] min-h-[540px]">
         {/* Parameters Panel */}
-        <div className="lg:col-span-1 border border-zinc-800/80 bg-zinc-900/40 rounded-lg p-4 flex flex-col justify-between overflow-y-auto space-y-4 text-xs">
+        <div className="lg:col-span-1 border border-zinc-800/80 bg-zinc-900/40 rounded-lg p-5 flex flex-col justify-between overflow-y-auto space-y-5 text-sm">
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-white font-medium pb-2 border-b border-zinc-800/80">
-              <Sliders className="size-3.5 text-zinc-400" />
+            <div className="flex items-center gap-2 text-white font-semibold pb-2 border-b border-zinc-800/80">
+              <Sliders className="size-4 text-zinc-400" />
               <span>Parameters</span>
             </div>
 
-            {/* Model */}
+            {/* Model Endpoint */}
             <div>
-              <label className="block text-zinc-400 mb-1">
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5">
                 Model endpoint
               </label>
               <select
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-700 font-mono text-xs"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-3 py-2 text-zinc-200 focus:outline-none focus:border-zinc-700 font-mono text-xs"
               >
                 {sampleModels.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -195,21 +196,21 @@ export default function PlaygroundPage() {
 
             {/* System Prompt */}
             <div>
-              <label className="block text-zinc-400 mb-1">
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5">
                 System instructions
               </label>
               <textarea
-                rows={3}
+                rows={4}
                 value={systemPrompt}
                 onChange={(e) => setSystemPrompt(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-md p-2 text-zinc-200 text-xs focus:outline-none focus:border-zinc-700 font-mono resize-none"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-md p-2.5 text-zinc-200 text-xs focus:outline-none focus:border-zinc-700 font-mono resize-none leading-relaxed"
               />
             </div>
 
             {/* Temperature */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-zinc-400">
-                <span>Temperature</span>
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs text-zinc-400">
+                <span className="font-medium">Temperature</span>
                 <span className="font-mono tabular-nums text-zinc-200">{temperature}</span>
               </div>
               <input
@@ -219,14 +220,14 @@ export default function PlaygroundPage() {
                 step="0.05"
                 value={temperature}
                 onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                className="w-full accent-zinc-200 h-1 bg-zinc-800 rounded cursor-pointer"
+                className="w-full accent-zinc-200 h-1.5 bg-zinc-800 rounded cursor-pointer"
               />
             </div>
 
             {/* Top P */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-zinc-400">
-                <span>Top P</span>
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs text-zinc-400">
+                <span className="font-medium">Top P</span>
                 <span className="font-mono tabular-nums text-zinc-200">{topP}</span>
               </div>
               <input
@@ -236,14 +237,14 @@ export default function PlaygroundPage() {
                 step="0.05"
                 value={topP}
                 onChange={(e) => setTopP(parseFloat(e.target.value))}
-                className="w-full accent-zinc-200 h-1 bg-zinc-800 rounded cursor-pointer"
+                className="w-full accent-zinc-200 h-1.5 bg-zinc-800 rounded cursor-pointer"
               />
             </div>
 
             {/* Max Tokens */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-zinc-400">
-                <span>Max tokens</span>
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs text-zinc-400">
+                <span className="font-medium">Max tokens</span>
                 <span className="font-mono tabular-nums text-zinc-200">{maxTokens}</span>
               </div>
               <input
@@ -253,67 +254,67 @@ export default function PlaygroundPage() {
                 step="64"
                 value={maxTokens}
                 onChange={(e) => setMaxTokens(parseInt(e.target.value))}
-                className="w-full accent-zinc-200 h-1 bg-zinc-800 rounded cursor-pointer"
+                className="w-full accent-zinc-200 h-1.5 bg-zinc-800 rounded cursor-pointer"
               />
             </div>
 
             {/* Stream */}
             <div className="flex items-center justify-between pt-1">
-              <span className="text-zinc-400">Stream tokens</span>
+              <span className="text-xs font-medium text-zinc-400">Stream tokens</span>
               <button
                 type="button"
                 onClick={() => setIsStreaming(!isStreaming)}
-                className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                   isStreaming ? "bg-zinc-200" : "bg-zinc-800"
                 }`}
               >
                 <span
-                  className={`inline-block size-3 transform rounded-full transition-transform ${
-                    isStreaming ? "translate-x-4 bg-zinc-950" : "translate-x-0.5 bg-zinc-400"
+                  className={`inline-block size-3.5 transform rounded-full transition-transform ${
+                    isStreaming ? "translate-x-4 bg-zinc-950" : "translate-x-1 bg-zinc-400"
                   }`}
                 />
               </button>
             </div>
           </div>
 
-          <div className="text-[11px] text-zinc-500 font-mono">
-            localhost:{activeModelObj.port}
+          <div className="text-xs text-zinc-400 font-mono border-t border-zinc-800 pt-3">
+            Endpoint: localhost:{activeModelObj.port}
           </div>
         </div>
 
         {/* Chat Area */}
         <div className="lg:col-span-3 border border-zinc-800/80 bg-zinc-900/40 rounded-lg flex flex-col justify-between overflow-hidden">
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-5 space-y-4">
             {messages.map((msg, index) => (
               <div
                 key={index}
-                className={`flex gap-3 text-xs ${
+                className={`flex gap-3 text-sm ${
                   msg.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
                 {msg.role === "assistant" && (
-                  <div className="size-6 rounded bg-zinc-800 border border-zinc-700/80 text-zinc-300 flex items-center justify-center shrink-0">
-                    <Bot className="size-3.5" />
+                  <div className="size-7 rounded bg-zinc-800 border border-zinc-700/80 text-zinc-300 flex items-center justify-center shrink-0">
+                    <Bot className="size-4" />
                   </div>
                 )}
 
                 <div
-                  className={`max-w-[85%] rounded-lg px-3.5 py-2.5 space-y-2 ${
+                  className={`max-w-[85%] rounded-lg px-4 py-3 space-y-2.5 ${
                     msg.role === "user"
                       ? "bg-zinc-800 border border-zinc-700/80 text-white"
                       : "bg-zinc-950 border border-zinc-800/80 text-zinc-200"
                   }`}
                 >
-                  <p className="whitespace-pre-wrap leading-relaxed">
+                  <p className="whitespace-pre-wrap leading-relaxed text-sm">
                     {msg.content}
                   </p>
 
                   {/* Telemetry pill */}
                   {msg.metrics && (
-                    <div className="pt-2 border-t border-zinc-800/80 flex items-center gap-3 text-[10px] font-mono text-zinc-500">
-                      <span className="text-zinc-300 tabular-nums">
-                        TTFT: {msg.metrics.ttft}ms
+                    <div className="pt-2 border-t border-zinc-800/80 flex items-center gap-3.5 text-xs font-mono text-zinc-400">
+                      <span className="text-zinc-200 font-medium tabular-nums">
+                        TTFT: {msg.metrics.ttft} ms
                       </span>
                       <span className="tabular-nums">
                         Rate: {msg.metrics.tokensPerSec} tok/s
@@ -326,8 +327,8 @@ export default function PlaygroundPage() {
                 </div>
 
                 {msg.role === "user" && (
-                  <div className="size-6 rounded bg-zinc-800 border border-zinc-700/80 text-zinc-300 flex items-center justify-center shrink-0">
-                    <User className="size-3.5" />
+                  <div className="size-7 rounded bg-zinc-800 border border-zinc-700/80 text-zinc-300 flex items-center justify-center shrink-0">
+                    <User className="size-4" />
                   </div>
                 )}
               </div>
@@ -336,11 +337,11 @@ export default function PlaygroundPage() {
           </div>
 
           {/* Input Box */}
-          <div className="p-3 bg-zinc-950/60 border-t border-zinc-800/80">
-            <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-md px-3 py-2 focus-within:border-zinc-700 transition-colors">
+          <div className="p-3.5 bg-zinc-950/70 border-t border-zinc-800/80">
+            <div className="flex items-center gap-2.5 bg-zinc-900 border border-zinc-800 rounded-md px-3.5 py-2.5 focus-within:border-zinc-700 transition-colors">
               <textarea
                 rows={1}
-                placeholder="Submit prompt..."
+                placeholder="Submit prompt for generation..."
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyDown={(e) => {
@@ -349,15 +350,15 @@ export default function PlaygroundPage() {
                     handleSend();
                   }
                 }}
-                className="flex-1 bg-transparent text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none resize-none font-sans"
+                className="flex-1 bg-transparent text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none resize-none font-sans"
               />
               <button
                 onClick={handleSend}
                 disabled={!inputMessage.trim() || isGenerating}
-                className="h-7 px-2.5 rounded bg-zinc-100 hover:bg-white disabled:opacity-40 text-zinc-950 text-xs font-medium flex items-center gap-1 transition-colors shrink-0"
+                className="h-8 px-3.5 rounded bg-zinc-100 hover:bg-white disabled:opacity-40 text-zinc-950 text-sm font-medium flex items-center gap-1.5 transition-colors shrink-0"
               >
                 <span>Send</span>
-                <Send className="size-3" />
+                <Send className="size-3.5" />
               </button>
             </div>
           </div>
@@ -367,21 +368,21 @@ export default function PlaygroundPage() {
       {/* cURL Modal */}
       {showCurlModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-xl bg-zinc-900 border border-zinc-800 rounded-lg p-5 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
-              <h3 className="font-medium text-white text-sm">
+          <div className="w-full max-w-xl bg-zinc-900 border border-zinc-800 rounded-lg p-6 space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+              <h3 className="font-semibold text-white text-base">
                 cURL request snippet
               </h3>
               <button
                 onClick={() => setShowCurlModal(false)}
-                className="text-zinc-400 hover:text-white text-xs"
+                className="text-zinc-400 hover:text-white text-sm"
               >
                 ✕
               </button>
             </div>
 
             <div className="relative">
-              <pre className="p-3.5 rounded bg-zinc-950 border border-zinc-800 text-[11px] text-zinc-300 font-mono overflow-x-auto leading-relaxed">
+              <pre className="p-4 rounded bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 font-mono overflow-x-auto leading-relaxed">
                 {curlCode}
               </pre>
               <button
@@ -390,9 +391,9 @@ export default function PlaygroundPage() {
                   setCopiedSnippet(true);
                   setTimeout(() => setCopiedSnippet(false), 1500);
                 }}
-                className="absolute top-2 right-2 px-2 py-1 rounded border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs flex items-center gap-1 transition-colors"
+                className="absolute top-2.5 right-2.5 px-3 py-1.5 rounded border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-medium flex items-center gap-1.5 transition-colors"
               >
-                <Copy className="size-3" />
+                <Copy className="size-3.5" />
                 <span>{copiedSnippet ? "Copied" : "Copy"}</span>
               </button>
             </div>
@@ -400,7 +401,7 @@ export default function PlaygroundPage() {
             <div className="flex justify-end">
               <button
                 onClick={() => setShowCurlModal(false)}
-                className="px-3 py-1.5 rounded-md border border-zinc-800 bg-zinc-900 text-zinc-300 text-xs"
+                className="px-4 py-2 rounded-md border border-zinc-800 bg-zinc-900 text-zinc-300 text-sm font-medium hover:bg-zinc-800"
               >
                 Close
               </button>

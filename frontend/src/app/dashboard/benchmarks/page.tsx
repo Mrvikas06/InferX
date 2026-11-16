@@ -92,9 +92,10 @@ export default function BenchmarksPage() {
           clearInterval(interval);
           setIsRunning(false);
 
+          const modelShortName = targetModel.split("/")[1] || targetModel;
           const newResult: BenchmarkResult = {
             id: `bm-${Date.now()}`,
-            name: `${targetModel.split("/")[1]} Sweep (C=${concurrency})`,
+            name: `${modelShortName} Sweep (C=${concurrency})`,
             engine: targetEngine,
             model: targetModel,
             concurrency: concurrency,
@@ -118,40 +119,40 @@ export default function BenchmarksPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800/80">
         <div>
-          <h1 className="text-xl font-semibold text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
             Benchmarks
           </h1>
-          <p className="text-xs text-zinc-400 mt-0.5">
-            Synthetic load tests measuring TTFT, ITL, and tokens per second
+          <p className="text-sm text-zinc-400 mt-1">
+            Synthetic load tests measuring TTFT, ITL, and tokens per second throughput
           </p>
         </div>
       </div>
 
-      {/* Configuration Form */}
-      <div className="p-5 rounded-lg border border-zinc-800/80 bg-zinc-900/40 space-y-4">
-        <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
-          <h2 className="text-sm font-medium text-white flex items-center gap-2">
-            <Gauge className="size-3.5 text-zinc-400" />
+      {/* Configuration Form Card */}
+      <div className="p-5 sm:p-6 rounded-lg border border-zinc-800/80 bg-zinc-900/40 space-y-5">
+        <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
+          <h2 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2.5">
+            <Gauge className="size-4 text-zinc-400" />
             <span>Load test profile</span>
           </h2>
-          <span className="text-xs text-zinc-500 font-mono">
+          <span className="text-xs sm:text-sm text-zinc-400 font-mono">
             Poisson request distribution
           </span>
         </div>
 
-        <form onSubmit={handleStartBenchmark} className="space-y-4 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <form onSubmit={handleStartBenchmark} className="space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             <div>
-              <label className="block text-zinc-400 mb-1">
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
                 Model
               </label>
               <select
                 value={targetModel}
                 onChange={(e) => setTargetModel(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-700 font-mono"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-zinc-700 font-mono"
               >
                 <option value="meta-llama/Llama-3.3-70B-Instruct">
                   Llama 3.3 70B Instruct
@@ -166,7 +167,7 @@ export default function BenchmarksPage() {
             </div>
 
             <div>
-              <label className="block text-zinc-400 mb-1">
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
                 Engine
               </label>
               <select
@@ -176,7 +177,7 @@ export default function BenchmarksPage() {
                     e.target.value as "vLLM" | "SGLang" | "TensorRT-LLM"
                   )
                 }
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-700 font-mono"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-zinc-700 font-mono"
               >
                 <option value="vLLM">vLLM (Chunked prefill)</option>
                 <option value="SGLang">SGLang (Radix attention)</option>
@@ -185,8 +186,8 @@ export default function BenchmarksPage() {
             </div>
 
             <div>
-              <div className="flex justify-between text-zinc-400 mb-1">
-                <span>Concurrency</span>
+              <div className="flex justify-between text-sm text-zinc-300 mb-1.5">
+                <span className="font-medium">Concurrency</span>
                 <span className="font-mono tabular-nums text-zinc-200">{concurrency} users</span>
               </div>
               <input
@@ -196,12 +197,12 @@ export default function BenchmarksPage() {
                 step="1"
                 value={concurrency}
                 onChange={(e) => setConcurrency(Number(e.target.value))}
-                className="w-full accent-zinc-200 h-1 bg-zinc-800 rounded cursor-pointer mt-2"
+                className="w-full accent-zinc-200 h-1.5 bg-zinc-800 rounded cursor-pointer mt-2.5"
               />
             </div>
 
             <div>
-              <label className="block text-zinc-400 mb-1">
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
                 Input / output tokens
               </label>
               <div className="flex items-center gap-2">
@@ -210,31 +211,31 @@ export default function BenchmarksPage() {
                   value={inputLen}
                   onChange={(e) => setInputLen(Number(e.target.value))}
                   placeholder="Input"
-                  className="w-1/2 bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1.5 text-zinc-200 font-mono text-center tabular-nums"
+                  className="w-1/2 bg-zinc-950 border border-zinc-800 rounded-md px-3 py-2 text-sm text-zinc-200 font-mono text-center tabular-nums"
                 />
-                <span className="text-zinc-600 font-mono">/</span>
+                <span className="text-zinc-500 font-mono">/</span>
                 <input
                   type="number"
                   value={outputLen}
                   onChange={(e) => setOutputLen(Number(e.target.value))}
                   placeholder="Output"
-                  className="w-1/2 bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1.5 text-zinc-200 font-mono text-center tabular-nums"
+                  className="w-1/2 bg-zinc-950 border border-zinc-800 rounded-md px-3 py-2 text-sm text-zinc-200 font-mono text-center tabular-nums"
                 />
               </div>
             </div>
           </div>
 
           {isRunning && (
-            <div className="p-3 rounded-md bg-zinc-950 border border-zinc-800 space-y-2">
-              <div className="flex justify-between text-xs">
+            <div className="p-4 rounded-md bg-zinc-950 border border-zinc-800 space-y-2.5">
+              <div className="flex justify-between text-sm">
                 <span className="text-zinc-300 font-mono">
                   Executing workload ({concurrency} concurrent streams)...
                 </span>
-                <span className="text-zinc-400 font-mono tabular-nums">{progress}%</span>
+                <span className="text-zinc-200 font-mono tabular-nums font-medium">{progress}%</span>
               </div>
-              <div className="w-full bg-zinc-800 rounded-full h-1 overflow-hidden">
+              <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
                 <div
-                  className="bg-zinc-200 h-1 rounded-full transition-all duration-300"
+                  className="bg-zinc-200 h-1.5 rounded-full transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -245,9 +246,9 @@ export default function BenchmarksPage() {
             <button
               type="submit"
               disabled={isRunning}
-              className="h-8 px-4 rounded-md bg-zinc-100 hover:bg-white disabled:opacity-40 text-zinc-950 font-medium flex items-center gap-1.5 transition-colors"
+              className="h-9 px-5 rounded-md bg-zinc-100 hover:bg-white disabled:opacity-40 text-zinc-950 text-sm font-medium flex items-center gap-2 transition-colors"
             >
-              <Play className="size-3.5" />
+              <Play className="size-4" />
               <span>{isRunning ? "Running..." : "Run benchmark"}</span>
             </button>
           </div>
@@ -255,60 +256,60 @@ export default function BenchmarksPage() {
       </div>
 
       {/* Results Table */}
-      <div className="p-5 rounded-lg border border-zinc-800/80 bg-zinc-900/40 space-y-4">
+      <div className="p-5 sm:p-6 rounded-lg border border-zinc-800/80 bg-zinc-900/40 space-y-4">
         <div>
-          <h2 className="text-sm font-medium text-white">
+          <h2 className="text-base sm:text-lg font-semibold text-white">
             Run history
           </h2>
-          <p className="text-xs text-zinc-500 mt-0.5">
-            Measured percentiles and throughput from completed executions
+          <p className="text-xs sm:text-sm text-zinc-400 mt-0.5">
+            Measured latency percentiles, throughput, and peak memory from completed executions
           </p>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-zinc-800 text-zinc-500 font-mono">
-                <th className="pb-2.5 font-normal">Workload / model</th>
-                <th className="pb-2.5 font-normal">Engine</th>
-                <th className="pb-2.5 font-normal">Concurrency</th>
-                <th className="pb-2.5 font-normal">Throughput</th>
-                <th className="pb-2.5 font-normal">TTFT (p50 / p99)</th>
-                <th className="pb-2.5 font-normal">ITL (p50)</th>
-                <th className="pb-2.5 font-normal">VRAM peak</th>
-                <th className="pb-2.5 font-normal">Time</th>
+              <tr className="border-b border-zinc-800 text-zinc-400 font-mono text-xs uppercase tracking-wider">
+                <th className="pb-3 font-medium">Workload / model</th>
+                <th className="pb-3 font-medium">Engine</th>
+                <th className="pb-3 font-medium">Concurrency</th>
+                <th className="pb-3 font-medium">Throughput</th>
+                <th className="pb-3 font-medium">TTFT (p50 / p99)</th>
+                <th className="pb-3 font-medium">ITL (p50)</th>
+                <th className="pb-3 font-medium">VRAM peak</th>
+                <th className="pb-3 font-medium">Time</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/60 font-mono tabular-nums">
               {benchmarks.map((bm) => (
                 <tr key={bm.id} className="hover:bg-zinc-800/20 transition-colors">
-                  <td className="py-2.5 pr-4 font-sans">
-                    <div className="font-medium text-white">{bm.name}</div>
-                    <div className="text-[11px] text-zinc-500 font-mono truncate max-w-xs">
+                  <td className="py-3 pr-4 font-sans">
+                    <div className="font-medium text-white text-sm">{bm.name}</div>
+                    <div className="text-xs text-zinc-400 font-mono truncate max-w-xs mt-0.5">
                       {bm.model}
                     </div>
                   </td>
-                  <td className="py-2.5 pr-4">
-                    <span className="px-2 py-0.5 rounded border border-zinc-800 bg-zinc-900 text-zinc-300 text-[11px]">
+                  <td className="py-3 pr-4">
+                    <span className="px-2.5 py-1 rounded border border-zinc-800 bg-zinc-900 text-zinc-300 text-xs">
                       {bm.engine}
                     </span>
                   </td>
-                  <td className="py-2.5 pr-4 text-zinc-400">
-                    {bm.concurrency}
+                  <td className="py-3 pr-4 text-zinc-300">
+                    {bm.concurrency} users
                   </td>
-                  <td className="py-2.5 pr-4 text-white font-medium">
+                  <td className="py-3 pr-4 text-white font-medium">
                     {bm.throughput.toLocaleString()} tok/s
                   </td>
-                  <td className="py-2.5 pr-4 text-zinc-200">
-                    {bm.ttftP50}ms / <span className="text-zinc-500">{bm.ttftP99}ms</span>
+                  <td className="py-3 pr-4 text-zinc-200">
+                    {bm.ttftP50} ms / <span className="text-zinc-400">{bm.ttftP99} ms</span>
                   </td>
-                  <td className="py-2.5 pr-4 text-zinc-300">
-                    {bm.itlP50}ms
+                  <td className="py-3 pr-4 text-zinc-300">
+                    {bm.itlP50} ms
                   </td>
-                  <td className="py-2.5 pr-4 text-zinc-400">
+                  <td className="py-3 pr-4 text-zinc-300">
                     {bm.vramPeak} GB
                   </td>
-                  <td className="py-2.5 text-zinc-500 font-sans text-[11px]">
+                  <td className="py-3 text-zinc-400 font-sans text-xs">
                     {bm.date}
                   </td>
                 </tr>
