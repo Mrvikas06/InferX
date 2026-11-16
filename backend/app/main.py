@@ -12,6 +12,7 @@ from backend.app.api.v1.router import api_v1_router
 from backend.app.api.v1.schemas import APIResponse
 from backend.app.core.config import get_settings
 from backend.app.core.logging import get_correlation_id, setup_logging
+from backend.app.core.redis import close_redis_pool
 from backend.app.middleware.correlation import CorrelationMiddleware
 
 settings = get_settings()
@@ -34,6 +35,10 @@ async def lifespan(app: FastAPI):
     yield
 
     logger.info("Shutting down %s control plane gracefully", settings.APP_NAME)
+    try:
+        await close_redis_pool()
+    except Exception as exc:
+        logger.warning("Error closing Redis pool: %s", exc)
 
 
 def create_app() -> FastAPI:

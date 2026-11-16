@@ -16,6 +16,8 @@ from backend.app.api.v1.schemas import (
 )
 from backend.app.core.config import get_settings
 from backend.app.core.logging import get_correlation_id
+from backend.app.core.redis import check_redis_health
+from backend.app.db.session import check_db_health
 
 router = APIRouter(tags=["Health & System"])
 settings = get_settings()
@@ -79,18 +81,32 @@ async def get_liveness():
 
 @router.get("/health/ready", response_model=HealthResponse)
 async def get_readiness() -> HealthResponse:
-    """Readiness probe verifying operational state."""
-    # In Phase 1, control plane is ready once configuration and runtime are healthy.
-    # Future phases will attach PostgreSQL connection pool and Redis ping checks here.
+    """Readiness probe verifying operational state across backend dependencies."""
+    db_healthy = await check_db_health()
+    redis_healthy = await check_redis_health()
+
+    components = {
+        "runtime": HealthCheckItem(status="healthy", message="FastAPI event loop responsive"),
+        "memory": HealthCheckItem(status="healthy", message="Host memory within operational threshold"),
+        "database": HealthCheckItem(
+            status="healthy" if db_healthy else "unreachable",
+            message="PostgreSQL connection operational" if db_healthy else "PostgreSQL connection failed",
+        ),
+        "redis": HealthCheckItem(
+            status="healthy" if redis_healthy else "unreachable",
+            message="Redis connection operational" if redis_healthy else "Redis connection failed",
+        ),
+    }
+
+    is_ready = db_healthy and redis_healthy
+    overall_status = "ready" if is_ready else ("degraded" if settings.is_development else "not_ready")
+
     return HealthResponse(
-        status="ready",
+        status=overall_status,
         app_name=settings.APP_NAME,
         version=settings.VERSION,
         environment=settings.APP_ENV,
-        components={
-            "runtime": HealthCheckItem(status="healthy", message="FastAPI event loop responsive"),
-            "memory": HealthCheckItem(status="healthy", message="Host memory within operational threshold"),
-        },
+        components=components,
     )
 
 
