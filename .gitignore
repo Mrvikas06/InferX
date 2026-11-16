@@ -23,13 +23,14 @@ dist/
 # Logs
 *.log
 
-# Model files
+# Model weights & checkpoints
 *.safetensors
 *.gguf
 *.pt
 *.pth
 checkpoints/
-models/
+/models/
+!backend/app/models/
 
 # OS
 .DS_Store
