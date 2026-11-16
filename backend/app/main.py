@@ -1,0 +1,100 @@
+"""InferX Backend Control Plane — FastAPI Entrypoint."""
+
+import logging
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from backend.app.api.v1.health import router as health_router
+from backend.app.api.v1.router import api_v1_router
+from backend.app.api.v1.schemas import APIResponse
+from backend.app.core.config import get_settings
+from backend.app.core.logging import get_correlation_id, setup_logging
+from backend.app.middleware.correlation import CorrelationMiddleware
+
+settings = get_settings()
+logger = logging.getLogger("inferx.main")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan manager for initialization and graceful teardown."""
+    # Initialize structured logging
+    setup_logging(log_level=settings.LOG_LEVEL, log_format=settings.LOG_FORMAT)
+    logger.info(
+        "Starting %s v%s in [%s] environment",
+        settings.APP_NAME,
+        settings.VERSION,
+        settings.APP_ENV,
+    )
+    logger.info("Control plane listening on %s:%d", settings.BACKEND_HOST, settings.BACKEND_PORT)
+
+    yield
+
+    logger.info("Shutting down %s control plane gracefully", settings.APP_NAME)
+
+
+def create_app() -> FastAPI:
+    """FastAPI application factory for InferX."""
+    app = FastAPI(
+        title=f"{settings.APP_NAME} Control Plane",
+        description="Unified self-hosted LLM inference management, routing, benchmarking, and GPU telemetry platform.",
+        version=settings.VERSION,
+        docs_url="/docs",
+        redoc_url="/redoc",
+        openapi_url="/openapi.json",
+        lifespan=lifespan,
+    )
+
+    # 1. Correlation & Telemetry Middleware (runs first on request / last on response)
+    app.add_middleware(CorrelationMiddleware)
+
+    # 2. CORS Middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["X-Request-ID", "X-Response-Time"],
+    )
+
+    # 3. Global Exception Handler
+    @app.exception_handler(Exception)
+    async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+        correlation_id = get_correlation_id()
+        logger.error("Unhandled exception processing request: %s", exc, exc_info=True)
+        response_data = APIResponse[None](
+            success=False,
+            data=None,
+            error=str(exc) if settings.DEBUG else "Internal server error",
+            correlation_id=correlation_id,
+        )
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content=response_data.model_dump(mode="json"),
+        )
+
+    # 4. Root Health Endpoints (Accessible at root /health for AWS/GCP/K8s/Docker health checkers)
+    app.include_router(health_router, prefix="", tags=["Root Health"])
+
+    # 5. Versioned API Router
+    app.include_router(api_v1_router, prefix="/api/v1")
+
+    return app
+
+
+app = create_app()
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "backend.app.main:app",
+        host=settings.BACKEND_HOST,
+        port=settings.BACKEND_PORT,
+        reload=settings.is_development,
+    )
