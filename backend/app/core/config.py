@@ -39,6 +39,13 @@ class Settings(BaseSettings):
     VLLM_BASE_URL: Optional[str] = None
     VLLM_API_KEY: Optional[str] = None
 
+    # Security & Authentication
+    JWT_SECRET_KEY: str = "inferx-super-secret-jwt-key-2026-production-change"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    DEFAULT_RATE_LIMIT_RPS: int = 50
+
     # Security & CORS
     CORS_ORIGINS: List[str] = Field(
         default_factory=lambda: [

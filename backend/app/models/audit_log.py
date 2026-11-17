@@ -14,7 +14,9 @@ class AuditLog(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "audit_logs"
 
     action: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    actor_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
     resource_type: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
     resource_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(32), default="success", nullable=False, index=True)
     details: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
     ip_address: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
