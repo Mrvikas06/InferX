@@ -1,5 +1,13 @@
 """Repositories Package."""
 
+from backend.app.repositories.api_key_repository import (
+    ApiKeyRepository,
+    api_key_repository,
+)
+from backend.app.repositories.audit_log_repository import (
+    AuditLogRepository,
+    audit_log_repository,
+)
 from backend.app.repositories.base import BaseRepository
 from backend.app.repositories.deployment_repository import (
     DeploymentRepository,
@@ -9,6 +17,10 @@ from backend.app.repositories.model_repository import (
     ModelRepository,
     model_repository,
 )
+from backend.app.repositories.user_repository import (
+    UserRepository,
+    user_repository,
+)
 
 __all__ = [
     "BaseRepository",
@@ -16,4 +28,10 @@ __all__ = [
     "model_repository",
     "DeploymentRepository",
     "deployment_repository",
+    "UserRepository",
+    "user_repository",
+    "ApiKeyRepository",
+    "api_key_repository",
+    "AuditLogRepository",
+    "audit_log_repository",
 ]
