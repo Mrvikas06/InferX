@@ -150,7 +150,7 @@ async def start_deployment_lifecycle(
             engine=deployment.engine,
             tensor_parallel=deployment.tensor_parallel,
             max_model_len=deployment.max_model_len,
-            gpu_memory_utilization=deployment.gpu_memory_utilization,
+            gpu_memory_utilization=getattr(deployment, "gpu_memory_utilization", 0.90),
         )
     except Exception as exc:
         append_deployment_log(deployment.id, f"Engine startup warning: {exc}", level="WARNING")

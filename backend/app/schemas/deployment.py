@@ -5,7 +5,10 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from backend.app.schemas.model import ModelResponse
+try:
+    from backend.app.schemas.model import ModelResponse
+except (ImportError, ModuleNotFoundError):
+    from app.schemas.model import ModelResponse
 
 
 class DeploymentBase(BaseModel):

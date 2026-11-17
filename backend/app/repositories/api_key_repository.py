@@ -6,10 +6,16 @@ from typing import List, Optional
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.core.security import generate_api_key, hash_api_key
-from backend.app.models.api_key import ApiKey
-from backend.app.repositories.base import BaseRepository
-from backend.app.schemas.api_key import ApiKeyCreate
+try:
+    from backend.app.core.security import generate_api_key, hash_api_key
+    from backend.app.models.api_key import ApiKey
+    from backend.app.repositories.base import BaseRepository
+    from backend.app.schemas.api_key import ApiKeyCreate
+except (ImportError, ModuleNotFoundError):
+    from app.core.security import generate_api_key, hash_api_key
+    from app.models.api_key import ApiKey
+    from app.repositories.base import BaseRepository
+    from app.schemas.api_key import ApiKeyCreate
 
 
 class ApiKeyRepository(BaseRepository[ApiKey, ApiKeyCreate, ApiKeyCreate]):

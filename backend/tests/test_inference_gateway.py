@@ -49,7 +49,7 @@ async def test_openai_models_endpoint_lifecycle(db_session: AsyncSession, async_
         ModelCreate(
             name="Qwen 2.5 7B",
             repo_id="Qwen/Qwen2.5-7B-Instruct",
-            parameter_count="7B",
+            parameters="7B",
             architecture="Qwen2ForCausalLM",
         ),
     )
@@ -60,7 +60,6 @@ async def test_openai_models_endpoint_lifecycle(db_session: AsyncSession, async_
             name="qwen-gateway-test",
             port=8089,
             engine="vllm",
-            status="stopped",
         ),
     )
     await db_session.commit()
@@ -139,7 +138,7 @@ async def test_chat_completions_auth_and_errors(db_session: AsyncSession, async_
         ModelCreate(
             name="Llama 3 Stopped",
             repo_id="meta-llama/Llama-3-Stopped-Test",
-            parameter_count="8B",
+            parameters="8B",
         ),
     )
     await deployment_repository.create(
@@ -148,7 +147,6 @@ async def test_chat_completions_auth_and_errors(db_session: AsyncSession, async_
             model_id=model.id,
             name="llama3-stopped-dep",
             port=8091,
-            status="stopped",
         ),
     )
     await db_session.commit()
@@ -190,7 +188,7 @@ async def test_chat_completions_non_streaming_execution(db_session: AsyncSession
         ModelCreate(
             name="Llama 3.1 8B",
             repo_id="meta-llama/Llama-3.1-8B-Instruct",
-            parameter_count="8B",
+            parameters="8B",
         ),
     )
     dep = await deployment_repository.create(
@@ -199,7 +197,6 @@ async def test_chat_completions_non_streaming_execution(db_session: AsyncSession
             model_id=model.id,
             name="llama31-running-dep",
             port=8092,
-            status="stopped",
         ),
     )
     await db_session.commit()
@@ -264,7 +261,7 @@ async def test_chat_completions_streaming_sse(db_session: AsyncSession, async_cl
         ModelCreate(
             name="Mistral 7B",
             repo_id="mistralai/Mistral-7B-Instruct-v0.3",
-            parameter_count="7B",
+            parameters="7B",
         ),
     )
     dep = await deployment_repository.create(
@@ -273,7 +270,6 @@ async def test_chat_completions_streaming_sse(db_session: AsyncSession, async_cl
             model_id=model.id,
             name="mistral-stream-dep",
             port=8093,
-            status="stopped",
         ),
     )
     await db_session.commit()

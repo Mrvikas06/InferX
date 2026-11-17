@@ -5,9 +5,14 @@ from typing import List, Optional
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.models.model import Model
-from backend.app.repositories.base import BaseRepository
-from backend.app.schemas.model import ModelCreate, ModelUpdate
+try:
+    from backend.app.models.model import Model
+    from backend.app.repositories.base import BaseRepository
+    from backend.app.schemas.model import ModelCreate, ModelUpdate
+except (ImportError, ModuleNotFoundError):
+    from app.models.model import Model
+    from app.repositories.base import BaseRepository
+    from app.schemas.model import ModelCreate, ModelUpdate
 
 
 class ModelRepository(BaseRepository[Model, ModelCreate, ModelUpdate]):

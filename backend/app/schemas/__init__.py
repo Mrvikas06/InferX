@@ -1,37 +1,71 @@
 """Pydantic Schemas Package."""
 
-from backend.app.schemas.api_key import (
-    ApiKeyCreate,
-    ApiKeyCreatedResponse,
-    ApiKeyListResponse,
-    ApiKeyResponse,
-)
-from backend.app.schemas.audit_log import (
-    AuditLogListResponse,
-    AuditLogResponse,
-)
-from backend.app.schemas.auth import (
-    TokenRefresh,
-    TokenResponse,
-    UserLogin,
-    UserRegister,
-    UserResponse,
-    UserUpdate,
-)
-from backend.app.schemas.deployment import (
-    DeploymentBase,
-    DeploymentCreate,
-    DeploymentListResponse,
-    DeploymentResponse,
-    DeploymentUpdate,
-)
-from backend.app.schemas.model import (
-    ModelBase,
-    ModelCreate,
-    ModelListResponse,
-    ModelResponse,
-    ModelUpdate,
-)
+try:
+    from backend.app.schemas.api_key import (
+        ApiKeyCreate,
+        ApiKeyCreatedResponse,
+        ApiKeyListResponse,
+        ApiKeyResponse,
+    )
+    from backend.app.schemas.audit_log import (
+        AuditLogListResponse,
+        AuditLogResponse,
+    )
+    from backend.app.schemas.auth import (
+        TokenRefresh,
+        TokenResponse,
+        UserLogin,
+        UserRegister,
+        UserResponse,
+        UserUpdate,
+    )
+    from backend.app.schemas.deployment import (
+        DeploymentBase,
+        DeploymentCreate,
+        DeploymentListResponse,
+        DeploymentResponse,
+        DeploymentUpdate,
+    )
+    from backend.app.schemas.model import (
+        ModelBase,
+        ModelCreate,
+        ModelListResponse,
+        ModelResponse,
+        ModelUpdate,
+    )
+except (ImportError, ModuleNotFoundError):
+    from app.schemas.api_key import (
+        ApiKeyCreate,
+        ApiKeyCreatedResponse,
+        ApiKeyListResponse,
+        ApiKeyResponse,
+    )
+    from app.schemas.audit_log import (
+        AuditLogListResponse,
+        AuditLogResponse,
+    )
+    from app.schemas.auth import (
+        TokenRefresh,
+        TokenResponse,
+        UserLogin,
+        UserRegister,
+        UserResponse,
+        UserUpdate,
+    )
+    from app.schemas.deployment import (
+        DeploymentBase,
+        DeploymentCreate,
+        DeploymentListResponse,
+        DeploymentResponse,
+        DeploymentUpdate,
+    )
+    from app.schemas.model import (
+        ModelBase,
+        ModelCreate,
+        ModelListResponse,
+        ModelResponse,
+        ModelUpdate,
+    )
 
 __all__ = [
     "ModelBase",

@@ -5,9 +5,14 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.models.audit_log import AuditLog
-from backend.app.repositories.base import BaseRepository
-from backend.app.schemas.audit_log import AuditLogResponse
+try:
+    from backend.app.models.audit_log import AuditLog
+    from backend.app.repositories.base import BaseRepository
+    from backend.app.schemas.audit_log import AuditLogResponse
+except (ImportError, ModuleNotFoundError):
+    from app.models.audit_log import AuditLog
+    from app.repositories.base import BaseRepository
+    from app.schemas.audit_log import AuditLogResponse
 
 
 class AuditLogRepository(BaseRepository[AuditLog, AuditLogResponse, AuditLogResponse]):

@@ -5,10 +5,16 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.core.security import hash_password
-from backend.app.models.user import User
-from backend.app.repositories.base import BaseRepository
-from backend.app.schemas.auth import UserRegister, UserUpdate
+try:
+    from backend.app.core.security import hash_password
+    from backend.app.models.user import User
+    from backend.app.repositories.base import BaseRepository
+    from backend.app.schemas.auth import UserRegister, UserUpdate
+except (ImportError, ModuleNotFoundError):
+    from app.core.security import hash_password
+    from app.models.user import User
+    from app.repositories.base import BaseRepository
+    from app.schemas.auth import UserRegister, UserUpdate
 
 
 class UserRepository(BaseRepository[User, UserRegister, UserUpdate]):

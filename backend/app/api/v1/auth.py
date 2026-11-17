@@ -153,6 +153,12 @@ async def refresh_token(
         )
 
     user_id = token_data.get("sub")
+    if not user_id or not isinstance(user_id, str):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token subject",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     user = await user_repository.get(db, user_id)
     if not user or not user.is_active:
         raise HTTPException(

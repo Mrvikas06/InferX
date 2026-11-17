@@ -5,10 +5,16 @@ from typing import TYPE_CHECKING, Optional
 from sqlalchemy import Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from backend.app.db.base import Base, TimestampMixin, UUIDMixin
+try:
+    from backend.app.db.base import Base, TimestampMixin, UUIDMixin
+except (ImportError, ModuleNotFoundError):
+    from app.db.base import Base, TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
-    from backend.app.models.model import Model
+    try:
+        from backend.app.models.model import Model
+    except (ImportError, ModuleNotFoundError):
+        from app.models.model import Model
 
 
 class Deployment(Base, UUIDMixin, TimestampMixin):

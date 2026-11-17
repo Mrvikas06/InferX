@@ -6,7 +6,10 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.db.base import Base
+try:
+    from backend.app.db.base import Base
+except (ImportError, ModuleNotFoundError):
+    from app.db.base import Base
 
 ModelType = TypeVar("ModelType", bound=Base)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
@@ -21,7 +24,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     async def get(self, db: AsyncSession, id: str) -> Optional[ModelType]:
         """Fetch a single record by its primary key ID."""
-        query = select(self.model).where(self.model.id == id)
+        query = select(self.model).where(getattr(self.model, "id") == id)
         result = await db.execute(query)
         return result.scalar_one_or_none()
 
@@ -35,7 +38,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     async def count(self, db: AsyncSession) -> int:
         """Count total records for the entity."""
-        query = select(func.count(self.model.id))
+        query = select(func.count(getattr(self.model, "id")))
         result = await db.execute(query)
         return result.scalar() or 0
 

@@ -6,9 +6,14 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from backend.app.models.deployment import Deployment
-from backend.app.repositories.base import BaseRepository
-from backend.app.schemas.deployment import DeploymentCreate, DeploymentUpdate
+try:
+    from backend.app.models.deployment import Deployment
+    from backend.app.repositories.base import BaseRepository
+    from backend.app.schemas.deployment import DeploymentCreate, DeploymentUpdate
+except (ImportError, ModuleNotFoundError):
+    from app.models.deployment import Deployment
+    from app.repositories.base import BaseRepository
+    from app.schemas.deployment import DeploymentCreate, DeploymentUpdate
 
 
 class DeploymentRepository(BaseRepository[Deployment, DeploymentCreate, DeploymentUpdate]):
