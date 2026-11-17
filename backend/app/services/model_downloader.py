@@ -9,7 +9,10 @@ _repo_root = str(Path(__file__).resolve().parent.parent.parent.parent)
 if _repo_root not in sys.path:
     sys.path.insert(0, _repo_root)
 
-from backend.app.core.config import BASE_DIR, get_settings
+try:
+    from backend.app.core.config import BASE_DIR, get_settings
+except (ImportError, ModuleNotFoundError):
+    from app.core.config import BASE_DIR, get_settings
 
 settings = get_settings()
 

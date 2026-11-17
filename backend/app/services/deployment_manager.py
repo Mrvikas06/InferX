@@ -17,8 +17,12 @@ if _repo_root not in sys.path:
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.models.deployment import Deployment
-from backend.app.repositories.deployment_repository import deployment_repository
+try:
+    from backend.app.models.deployment import Deployment
+    from backend.app.repositories.deployment_repository import deployment_repository
+except (ImportError, ModuleNotFoundError):
+    from app.models.deployment import Deployment
+    from app.repositories.deployment_repository import deployment_repository
 
 logger = logging.getLogger("inferx.deployment_manager")
 
