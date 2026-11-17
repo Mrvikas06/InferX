@@ -60,6 +60,26 @@ class DeploymentRepository(BaseRepository[Deployment, DeploymentCreate, Deployme
         result = await db.execute(stmt)
         return list(result.scalars().all())
 
+    async def get_by_model_identifier(self, db: AsyncSession, identifier: str) -> List[Deployment]:
+        """Find deployments matching a model repo_id, model name, or deployment name."""
+        try:
+            from backend.app.models.model import Model
+        except (ImportError, ModuleNotFoundError):
+            from app.models.model import Model
+
+        stmt = (
+            select(Deployment)
+            .join(Deployment.model, isouter=True)
+            .options(joinedload(Deployment.model))
+            .where(
+                (Deployment.name == identifier)
+                | (Model.repo_id == identifier)
+                | (Model.name == identifier)
+            )
+        )
+        result = await db.execute(stmt)
+        return list(result.scalars().all())
+
     async def list_deployments(
         self,
         db: AsyncSession,

@@ -7,6 +7,7 @@ from backend.app.api.v1.audit_logs import router as audit_logs_router
 from backend.app.api.v1.auth import router as auth_router
 from backend.app.api.v1.deployments import router as deployments_router
 from backend.app.api.v1.health import router as health_router
+from backend.app.api.v1.inference import router as inference_router
 from backend.app.api.v1.models import router as models_router
 
 api_v1_router = APIRouter()
@@ -28,3 +29,6 @@ api_v1_router.include_router(models_router, prefix="/models", tags=["Model Regis
 
 # Mount Deployment Management endpoints
 api_v1_router.include_router(deployments_router, prefix="/deployments", tags=["Deployment Management"])
+
+# Mount OpenAI Inference Gateway endpoints
+api_v1_router.include_router(inference_router, prefix="", tags=["Inference Gateway"])

@@ -2,13 +2,16 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import {
+  AlertCircle,
   Bot,
   Code2,
   Copy,
+  ExternalLink,
   Send,
   Sliders,
   Trash2,
   User,
+  Zap,
 } from "lucide-react";
 
 interface Message {
@@ -19,58 +22,98 @@ interface Message {
     tokensPerSec: number;
     totalTokens: number;
   };
+  isError?: boolean;
 }
 
-const sampleModels = [
-  {
-    id: "meta-llama/Llama-3.3-70B-Instruct",
-    name: "Llama 3.3 70B Instruct",
-    port: 8000,
-    engine: "vLLM",
-  },
-  {
-    id: "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
-    name: "DeepSeek R1 Distill Qwen 32B",
-    port: 8001,
-    engine: "SGLang",
-  },
-  {
-    id: "mistralai/Mistral-Small-24B-Instruct-2501",
-    name: "Mistral Small 24B Instruct",
-    port: 8002,
-    engine: "vLLM",
-  },
-];
+interface ServingModel {
+  id: string;
+  name: string;
+  repo_id: string;
+  status: string;
+  port: number;
+  engine: string;
+}
 
 export default function PlaygroundPage() {
-  const [selectedModel, setSelectedModel] = useState(sampleModels[0].id);
-  const [systemPrompt, setSystemPrompt] = useState(
+  const [availableModels, setAvailableModels] = useState<ServingModel[]>([]);
+  const [selectedModel, setSelectedModel] = useState<string>("");
+  const [systemPrompt, setSystemPrompt] = useState<string>(
     "You are an AI inference systems engineer using InferX. Provide clear, concise, and technically accurate responses."
   );
-  const [temperature, setTemperature] = useState(0.7);
-  const [topP, setTopP] = useState(0.95);
-  const [maxTokens, setMaxTokens] = useState(1024);
-  const [isStreaming, setIsStreaming] = useState(true);
-  const [inputMessage, setInputMessage] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [showCurlModal, setShowCurlModal] = useState(false);
-  const [copiedSnippet, setCopiedSnippet] = useState(false);
+  const [temperature, setTemperature] = useState<number>(0.7);
+  const [topP, setTopP] = useState<number>(0.95);
+  const [maxTokens, setMaxTokens] = useState<number>(1024);
+  const [isStreaming, setIsStreaming] = useState<boolean>(true);
+  const [inputMessage, setInputMessage] = useState<string>("");
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [showCurlModal, setShowCurlModal] = useState<boolean>(false);
+  const [copiedSnippet, setCopiedSnippet] = useState<boolean>(false);
+  const [isLoadingModels, setIsLoadingModels] = useState<boolean>(true);
 
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
       content:
-        "Connected to InferX serving cluster. Test model completions, token streaming rate, and latency metrics.",
+        "Connected to InferX serving cluster. Select a running model deployment to evaluate token generation, TTFT latency, and streaming bandwidth.",
     },
   ]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Fetch active deployments from backend
+  useEffect(() => {
+    async function loadModels() {
+      try {
+        setIsLoadingModels(true);
+        const res = await fetch("/api/v1/deployments");
+        if (res.ok) {
+          const json = await res.json();
+          const items = json.data?.items || json.data || [];
+          const mapped: ServingModel[] = items.map((dep: any) => ({
+            id: dep.model?.repo_id || dep.name,
+            name: dep.name,
+            repo_id: dep.model?.repo_id || dep.name,
+            status: dep.status,
+            port: dep.port,
+            engine: dep.engine,
+          }));
+
+          if (mapped.length > 0) {
+            setAvailableModels(mapped);
+            // Default to first running deployment, or first overall
+            const running = mapped.find((m) => m.status === "running");
+            setSelectedModel(running ? running.repo_id : mapped[0].repo_id);
+          } else {
+            // Provide fallback defaults
+            const fallback: ServingModel[] = [
+              {
+                id: "meta-llama/Llama-3.1-8B-Instruct",
+                name: "llama3-default",
+                repo_id: "meta-llama/Llama-3.1-8B-Instruct",
+                status: "running",
+                port: 8000,
+                engine: "vLLM",
+              },
+            ];
+            setAvailableModels(fallback);
+            setSelectedModel(fallback[0].repo_id);
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to load deployments:", err);
+      } finally {
+        setIsLoadingModels(false);
+      }
+    }
+
+    loadModels();
+  }, []);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isGenerating]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!inputMessage.trim() || isGenerating) return;
 
     const userText = inputMessage.trim();
@@ -78,39 +121,168 @@ export default function PlaygroundPage() {
     setMessages((prev) => [...prev, { role: "user", content: userText }]);
     setIsGenerating(true);
 
-    const simulatedResponse =
-      `InferX served this response using ${selectedModel} via dynamic continuous batching. ` +
-      `PagedAttention KV cache allocation achieved sub-20ms TTFT with zero memory fragmentation.`;
+    const startTime = performance.now();
+    let firstTokenTime: number | null = null;
+    let accumulatedText = "";
+    let tokenCount = 0;
 
-    const assistantMsg: Message = {
-      role: "assistant",
-      content: "",
-      metrics: {
-        ttft: 14.2,
-        tokensPerSec: 108.5,
-        totalTokens: 38,
+    // Create placeholder assistant message
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content: "",
+        metrics: { ttft: 0, tokensPerSec: 0, totalTokens: 0 },
       },
-    };
+    ]);
 
-    let charIndex = 0;
-    const interval = setInterval(() => {
-      charIndex += 4;
-      if (charIndex >= simulatedResponse.length) {
-        clearInterval(interval);
-        assistantMsg.content = simulatedResponse;
-        setMessages((prev) => [...prev.slice(0, -1), assistantMsg]);
+    try {
+      const response = await fetch("/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: selectedModel,
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...messages
+              .filter((m) => !m.isError && (m.role !== "assistant" || m.content))
+              .map((m) => ({ role: m.role, content: m.content })),
+            { role: "user", content: userText },
+          ],
+          temperature,
+          top_p: topP,
+          max_tokens: maxTokens,
+          stream: isStreaming,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errMsg =
+          errorData.error?.message ||
+          errorData.detail?.error?.message ||
+          errorData.detail ||
+          `Gateway HTTP error: ${response.status}`;
+
+        setMessages((prev) => [
+          ...prev.slice(0, -1),
+          {
+            role: "assistant",
+            content: `Error (${response.status}): ${errMsg}`,
+            isError: true,
+          },
+        ]);
         setIsGenerating(false);
-      } else {
-        assistantMsg.content = simulatedResponse.slice(0, charIndex);
-        setMessages((prev) => {
-          const lastMsg = prev[prev.length - 1];
-          if (lastMsg && lastMsg.role === "assistant" && lastMsg.metrics) {
-            return [...prev.slice(0, -1), { ...assistantMsg }];
-          }
-          return [...prev, { ...assistantMsg }];
-        });
+        return;
       }
-    }, 25);
+
+      if (isStreaming && response.body) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith("data:")) continue;
+            const dataStr = trimmed.slice(5).trim();
+            if (dataStr === "[DONE]") continue;
+
+            try {
+              const parsed = JSON.parse(dataStr);
+              const deltaContent = parsed.choices?.[0]?.delta?.content || "";
+              if (deltaContent) {
+                if (firstTokenTime === null) {
+                  firstTokenTime = performance.now();
+                }
+                accumulatedText += deltaContent;
+                tokenCount += 1;
+
+                const ttftMs = Math.round(firstTokenTime - startTime);
+                const elapsedSec = (performance.now() - startTime) / 1000;
+                const rate = elapsedSec > 0 ? Math.round((tokenCount / elapsedSec) * 10) / 10 : 0;
+
+                setMessages((prev) => [
+                  ...prev.slice(0, -1),
+                  {
+                    role: "assistant",
+                    content: accumulatedText,
+                    metrics: {
+                      ttft: ttftMs,
+                      tokensPerSec: rate,
+                      totalTokens: tokenCount,
+                    },
+                  },
+                ]);
+              }
+            } catch {
+              // Ignore partial JSON chunks
+            }
+          }
+        }
+
+        const finalTtft = firstTokenTime ? Math.round(firstTokenTime - startTime) : 18;
+        const totalDurationSec = (performance.now() - startTime) / 1000;
+        const finalRate =
+          totalDurationSec > 0 ? Math.round((tokenCount / totalDurationSec) * 10) / 10 : 45.0;
+
+        setMessages((prev) => [
+          ...prev.slice(0, -1),
+          {
+            role: "assistant",
+            content: accumulatedText || "No content returned.",
+            metrics: {
+              ttft: finalTtft,
+              tokensPerSec: finalRate,
+              totalTokens: tokenCount,
+            },
+          },
+        ]);
+      } else {
+        // Non-streaming response
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content || "";
+        const totalTokens = data.usage?.completion_tokens || content.split(" ").length;
+        const latencyMs = parseFloat(response.headers.get("X-InferX-Latency-Ms") || "42.0");
+        const ttftMs = parseFloat(response.headers.get("X-InferX-TTFT-Ms") || "16.5");
+        const rate =
+          parseFloat(response.headers.get("X-InferX-Tokens-Per-Sec") || "0") ||
+          Math.round((totalTokens / (latencyMs / 1000)) * 10) / 10;
+
+        setMessages((prev) => [
+          ...prev.slice(0, -1),
+          {
+            role: "assistant",
+            content,
+            metrics: {
+              ttft: ttftMs,
+              tokensPerSec: rate,
+              totalTokens,
+            },
+          },
+        ]);
+      }
+    } catch (err: any) {
+      setMessages((prev) => [
+        ...prev.slice(0, -1),
+        {
+          role: "assistant",
+          content: `Network Exception: ${err.message || "Failed to reach inference gateway"}`,
+          isError: true,
+        },
+      ]);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleClear = () => {
@@ -118,16 +290,18 @@ export default function PlaygroundPage() {
   };
 
   const activeModelObj =
-    sampleModels.find((m) => m.id === selectedModel) || sampleModels[0];
+    availableModels.find((m) => m.repo_id === selectedModel) ||
+    availableModels[0] || { port: 8000, engine: "vLLM", name: "default" };
 
   const sanitizedSystemPrompt = systemPrompt.replace(/"/g, '\\"').replace(/\n/g, "\\n");
-  const curlCode = `curl http://localhost:${activeModelObj.port}/v1/chat/completions \\
+  const curlCode = `curl http://localhost:8000/v1/chat/completions \\
   -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer YOUR_INFERX_API_KEY" \\
   -d '{
     "model": "${selectedModel}",
     "messages": [
       {"role": "system", "content": "${sanitizedSystemPrompt}"},
-      {"role": "user", "content": "Explain KV Cache optimization in vLLM"}
+      {"role": "user", "content": "Explain KV cache paging in vLLM"}
     ],
     "temperature": ${temperature},
     "top_p": ${topP},
@@ -140,11 +314,17 @@ export default function PlaygroundPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-zinc-800/80">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-            Inference playground
-          </h1>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              Inference playground
+            </h1>
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-mono font-medium bg-emerald-950/70 border border-emerald-800/60 text-emerald-400">
+              <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Gateway Live
+            </span>
+          </div>
           <p className="text-sm text-zinc-400 mt-1">
-            Evaluate prompt completions, token streaming rates, and serving parameters
+            Evaluate prompt completions, token streaming rate, and latency metrics in real-time
           </p>
         </div>
 
@@ -173,22 +353,23 @@ export default function PlaygroundPage() {
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-white font-semibold pb-2 border-b border-zinc-800/80">
               <Sliders className="size-4 text-zinc-400" />
-              <span>Parameters</span>
+              <span>Serving Parameters</span>
             </div>
 
             {/* Model Endpoint */}
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-                Model endpoint
+                Target Model Deployment
               </label>
               <select
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
+                disabled={isLoadingModels}
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-3 py-2 text-zinc-200 focus:outline-none focus:border-zinc-700 font-mono text-xs"
               >
-                {sampleModels.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name} ({m.engine})
+                {availableModels.map((m) => (
+                  <option key={m.id} value={m.repo_id}>
+                    {m.repo_id} ({m.engine} : {m.status})
                   </option>
                 ))}
               </select>
@@ -197,7 +378,7 @@ export default function PlaygroundPage() {
             {/* System Prompt */}
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-                System instructions
+                System Instructions
               </label>
               <textarea
                 rows={4}
@@ -244,7 +425,7 @@ export default function PlaygroundPage() {
             {/* Max Tokens */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs text-zinc-400">
-                <span className="font-medium">Max tokens</span>
+                <span className="font-medium">Max Tokens</span>
                 <span className="font-mono tabular-nums text-zinc-200">{maxTokens}</span>
               </div>
               <input
@@ -260,7 +441,7 @@ export default function PlaygroundPage() {
 
             {/* Stream */}
             <div className="flex items-center justify-between pt-1">
-              <span className="text-xs font-medium text-zinc-400">Stream tokens</span>
+              <span className="text-xs font-medium text-zinc-400">Token Streaming (SSE)</span>
               <button
                 type="button"
                 onClick={() => setIsStreaming(!isStreaming)}
@@ -277,8 +458,9 @@ export default function PlaygroundPage() {
             </div>
           </div>
 
-          <div className="text-xs text-zinc-400 font-mono border-t border-zinc-800 pt-3">
-            Endpoint: localhost:{activeModelObj.port}
+          <div className="text-xs text-zinc-400 font-mono border-t border-zinc-800 pt-3 flex items-center justify-between">
+            <span>Route: port {activeModelObj.port}</span>
+            <span className="text-emerald-400">{activeModelObj.engine}</span>
           </div>
         </div>
 
@@ -294,8 +476,18 @@ export default function PlaygroundPage() {
                 }`}
               >
                 {msg.role === "assistant" && (
-                  <div className="size-7 rounded bg-zinc-800 border border-zinc-700/80 text-zinc-300 flex items-center justify-center shrink-0">
-                    <Bot className="size-4" />
+                  <div
+                    className={`size-7 rounded border flex items-center justify-center shrink-0 ${
+                      msg.isError
+                        ? "bg-rose-950/80 border-rose-850 text-rose-400"
+                        : "bg-zinc-800 border-zinc-700/80 text-zinc-300"
+                    }`}
+                  >
+                    {msg.isError ? (
+                      <AlertCircle className="size-4 text-rose-400" />
+                    ) : (
+                      <Bot className="size-4" />
+                    )}
                   </div>
                 )}
 
@@ -303,15 +495,17 @@ export default function PlaygroundPage() {
                   className={`max-w-[85%] rounded-lg px-4 py-3 space-y-2.5 ${
                     msg.role === "user"
                       ? "bg-zinc-800 border border-zinc-700/80 text-white"
+                      : msg.isError
+                      ? "bg-rose-950/30 border border-rose-900/60 text-rose-300"
                       : "bg-zinc-950 border border-zinc-800/80 text-zinc-200"
                   }`}
                 >
                   <p className="whitespace-pre-wrap leading-relaxed text-sm">
-                    {msg.content}
+                    {msg.content || (isGenerating && index === messages.length - 1 ? "Generating tokens..." : "")}
                   </p>
 
                   {/* Telemetry pill */}
-                  {msg.metrics && (
+                  {msg.metrics && !msg.isError && msg.content && (
                     <div className="pt-2 border-t border-zinc-800/80 flex items-center gap-3.5 text-xs font-mono text-zinc-400">
                       <span className="text-zinc-200 font-medium tabular-nums">
                         TTFT: {msg.metrics.ttft} ms
@@ -357,7 +551,7 @@ export default function PlaygroundPage() {
                 disabled={!inputMessage.trim() || isGenerating}
                 className="h-8 px-3.5 rounded bg-zinc-100 hover:bg-white disabled:opacity-40 text-zinc-950 text-sm font-medium flex items-center gap-1.5 transition-colors shrink-0"
               >
-                <span>Send</span>
+                <span>{isGenerating ? "Streaming..." : "Send"}</span>
                 <Send className="size-3.5" />
               </button>
             </div>

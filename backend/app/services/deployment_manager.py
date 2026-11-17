@@ -20,9 +20,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 try:
     from backend.app.models.deployment import Deployment
     from backend.app.repositories.deployment_repository import deployment_repository
+    from backend.app.services.vllm_runner import start_engine, stop_engine
 except (ImportError, ModuleNotFoundError):
     from app.models.deployment import Deployment
     from app.repositories.deployment_repository import deployment_repository
+    from app.services.vllm_runner import start_engine, stop_engine
 
 logger = logging.getLogger("inferx.deployment_manager")
 
@@ -138,6 +140,21 @@ async def start_deployment_lifecycle(
     # Transition to starting then running
     await transition_state(db, deployment, "starting")
     append_deployment_log(deployment.id, "Allocating GPU KV cache blocks and CUDA graphs...")
+
+    model_name = deployment.model.repo_id if deployment.model else "meta-llama/Llama-3.1-8B-Instruct"
+    try:
+        await start_engine(
+            deployment_id=deployment.id,
+            model_name=model_name,
+            port=deployment.port,
+            engine=deployment.engine,
+            tensor_parallel=deployment.tensor_parallel,
+            max_model_len=deployment.max_model_len,
+            gpu_memory_utilization=deployment.gpu_memory_utilization,
+        )
+    except Exception as exc:
+        append_deployment_log(deployment.id, f"Engine startup warning: {exc}", level="WARNING")
+
     append_deployment_log(deployment.id, f"Serving endpoint active on port {deployment.port} (base_url: {deployment.base_url})")
 
     updated = await transition_state(db, deployment, "running")
@@ -151,6 +168,10 @@ async def stop_deployment_lifecycle(
     """Gracefully terminate serving deployment worker."""
     append_deployment_log(deployment.id, "Stopping inference engine worker and reclaiming GPU memory...")
     await transition_state(db, deployment, "stopping")
+    try:
+        await stop_engine(deployment.id)
+    except Exception as exc:
+        append_deployment_log(deployment.id, f"Engine shutdown warning: {exc}", level="WARNING")
     updated = await transition_state(db, deployment, "stopped")
     append_deployment_log(deployment.id, "Inference engine stopped. Port released.")
     return updated

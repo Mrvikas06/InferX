@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from backend.app.api.v1.health import router as health_router
+from backend.app.api.v1.inference import router as inference_router
 from backend.app.api.v1.router import api_v1_router
 from backend.app.api.v1.schemas import APIResponse
 from backend.app.core.config import get_settings
@@ -94,6 +95,9 @@ def create_app() -> FastAPI:
 
     # 5. Versioned API Router
     app.include_router(api_v1_router, prefix="/api/v1")
+
+    # 6. Direct OpenAI-Compatible Gateway Router (for standard SDKs with base_url="http://host:port/v1")
+    app.include_router(inference_router, prefix="/v1", tags=["OpenAI Inference Gateway"])
 
     return app
 
