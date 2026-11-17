@@ -1,4 +1,4 @@
-"""Model Registry CRUD API Endpoints for InferX."""
+"""Model Registry CRUD and Deep Inspection API Endpoints for InferX."""
 
 from typing import Optional
 
@@ -12,12 +12,32 @@ from backend.app.repositories.deployment_repository import deployment_repository
 from backend.app.repositories.model_repository import model_repository
 from backend.app.schemas.model import (
     ModelCreate,
+    ModelInspectRequest,
+    ModelInspectResponse,
     ModelListResponse,
     ModelResponse,
     ModelUpdate,
 )
+from backend.app.services.model_downloader import register_local_weights
+from backend.app.services.model_inspector import (
+    calculate_min_vram_gb,
+    inspect_huggingface_repo,
+)
 
 router = APIRouter()
+
+
+@router.post("/inspect", response_model=APIResponse[ModelInspectResponse])
+async def inspect_model(
+    payload: ModelInspectRequest,
+) -> APIResponse[ModelInspectResponse]:
+    """Inspect a HuggingFace model repository to detect architecture, parameters, and VRAM needs."""
+    metadata = await inspect_huggingface_repo(payload.repo_id)
+    return APIResponse[ModelInspectResponse](
+        success=True,
+        data=ModelInspectResponse(**metadata),
+        correlation_id=get_correlation_id(),
+    )
 
 
 @router.get("", response_model=APIResponse[ModelListResponse])
@@ -69,7 +89,16 @@ async def register_model(
             detail=f"Model with repo_id '{payload.repo_id}' is already registered (id: {existing.id})",
         )
 
-    model = await model_repository.create(db, payload)
+    # Auto-calculate min_gpu_vram_gb if not provided
+    create_dict = payload.model_dump()
+    if create_dict.get("min_gpu_vram_gb") is None and create_dict.get("parameters") != "Unknown":
+        create_dict["min_gpu_vram_gb"] = calculate_min_vram_gb(
+            create_dict["parameters"],
+            create_dict.get("precision", "BF16"),
+            create_dict.get("context_window", 8192),
+        )
+
+    model = await model_repository.create(db, create_dict)
     return APIResponse[ModelResponse](
         success=True,
         data=ModelResponse.model_validate(model),
@@ -114,6 +143,36 @@ async def update_model(
     return APIResponse[ModelResponse](
         success=True,
         data=ModelResponse.model_validate(updated_model),
+        correlation_id=get_correlation_id(),
+    )
+
+
+@router.post("/{model_id}/verify-weights", response_model=APIResponse[ModelResponse])
+async def verify_model_weights(
+    model_id: str,
+    db: AsyncSession = Depends(get_db),
+) -> APIResponse[ModelResponse]:
+    """Probe the local disk cache to verify model weights presence and calculate disk size."""
+    model = await model_repository.get(db, model_id)
+    if not model:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Model with ID '{model_id}' not found",
+        )
+
+    weight_info = register_local_weights(model.repo_id, model.local_path)
+    model.is_downloaded = weight_info["is_downloaded"]
+    model.local_path = weight_info["local_path"]
+    if weight_info["size_on_disk_gb"] is not None:
+        model.size_on_disk_gb = weight_info["size_on_disk_gb"]
+
+    db.add(model)
+    await db.flush()
+    await db.refresh(model)
+
+    return APIResponse[ModelResponse](
+        success=True,
+        data=ModelResponse.model_validate(model),
         correlation_id=get_correlation_id(),
     )
 

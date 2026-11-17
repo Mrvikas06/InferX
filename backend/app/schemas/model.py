@@ -62,3 +62,25 @@ class ModelListResponse(BaseModel):
     total: int
     skip: int
     limit: int
+
+
+class ModelInspectRequest(BaseModel):
+    """Payload to probe HuggingFace model repository metadata."""
+
+    repo_id: str = Field(..., min_length=1, max_length=255, description="HuggingFace model ID (e.g. meta-llama/Llama-3.1-8B-Instruct)")
+
+
+class ModelInspectResponse(BaseModel):
+    """Inspected model metadata and GPU recommendations."""
+
+    name: str
+    repo_id: str
+    architecture: str
+    parameters: str
+    context_window: int
+    precision: str
+    size_on_disk_gb: Optional[float] = None
+    min_gpu_vram_gb: Optional[float] = None
+    tags: List[str] = Field(default_factory=list)
+    metadata_json: Dict[str, Any] = Field(default_factory=dict)
+

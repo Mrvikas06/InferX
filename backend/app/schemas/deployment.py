@@ -15,7 +15,7 @@ class DeploymentBase(BaseModel):
     model_id: str = Field(..., min_length=36, max_length=36, description="Target registered Model UUID")
     engine: str = Field(default="vLLM", max_length=32, description="Inference engine backend (vLLM, SGLang, TensorRT-LLM)")
     tensor_parallel: int = Field(default=1, ge=1, le=8, description="Tensor parallelism GPU shard count")
-    port: int = Field(..., ge=1024, le=65535, description="Network port allocated for the serving engine instance")
+    port: Optional[int] = Field(default=None, ge=1024, le=65535, description="Network port allocated for instance. Auto-allocated if omitted.")
     max_model_len: int = Field(default=8192, ge=512, le=131072, description="Maximum sequence length configured on engine")
     gpu_type: str = Field(default="Auto-detect", max_length=128, description="Target GPU accelerator type")
     replicas: int = Field(default=1, ge=0, le=16, description="Serving worker replica count")
@@ -62,3 +62,30 @@ class DeploymentListResponse(BaseModel):
     total: int
     skip: int
     limit: int
+
+
+class DeploymentLogEntry(BaseModel):
+    """Single log stream entry."""
+
+    timestamp: str
+    level: str
+    message: str
+
+
+class DeploymentLogsResponse(BaseModel):
+    """Log stream response for deployment instance."""
+
+    deployment_id: str
+    logs: list[DeploymentLogEntry]
+    total_lines: int
+
+
+class DeploymentHealthProbeResponse(BaseModel):
+    """Live health probe telemetry response."""
+
+    deployment_id: str
+    status: str
+    healthy: bool
+    latency_ms: Optional[float] = None
+    message: Optional[str] = None
+
