@@ -19,6 +19,10 @@ except (ImportError, ModuleNotFoundError):
 class DeploymentRepository(BaseRepository[Deployment, DeploymentCreate, DeploymentUpdate]):
     """Data access repository for Deployment entities."""
 
+    async def get_by_id(self, db: AsyncSession, id: str) -> Optional[Deployment]:
+        """Fetch deployment by primary ID."""
+        return await self.get(db, id)
+
     async def get_with_model(self, db: AsyncSession, id: str) -> Optional[Deployment]:
         """Fetch deployment by ID with its parent model eagerly loaded."""
         stmt = (

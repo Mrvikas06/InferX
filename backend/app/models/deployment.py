@@ -13,8 +13,10 @@ except (ImportError, ModuleNotFoundError):
 if TYPE_CHECKING:
     try:
         from backend.app.models.model import Model
+        from backend.app.models.scaling import ScalingPolicy
     except (ImportError, ModuleNotFoundError):
         from app.models.model import Model
+        from app.models.scaling import ScalingPolicy
 
 
 class Deployment(Base, UUIDMixin, TimestampMixin):
@@ -44,5 +46,12 @@ class Deployment(Base, UUIDMixin, TimestampMixin):
     model: Mapped["Model"] = relationship(
         "Model",
         back_populates="deployments",
+        lazy="joined",
+    )
+    scaling_policy: Mapped[Optional["ScalingPolicy"]] = relationship(
+        "ScalingPolicy",
+        back_populates="deployment",
+        uselist=False,
+        cascade="all, delete-orphan",
         lazy="joined",
     )

@@ -6,6 +6,7 @@ from backend.app.api.v1.api_keys import router as api_keys_router
 from backend.app.api.v1.audit_logs import router as audit_logs_router
 from backend.app.api.v1.auth import router as auth_router
 from backend.app.api.v1.benchmarks import router as benchmarks_router
+from backend.app.api.v1.cluster import router as cluster_router
 from backend.app.api.v1.deployments import router as deployments_router
 from backend.app.api.v1.health import router as health_router
 from backend.app.api.v1.inference import router as inference_router
@@ -40,3 +41,6 @@ api_v1_router.include_router(telemetry_router, prefix="/telemetry", tags=["Hardw
 
 # Mount Inference Benchmarking & Load Testing endpoints
 api_v1_router.include_router(benchmarks_router, prefix="/benchmarks", tags=["Benchmarks & Load Testing"])
+
+# Mount Cluster Scaling, Load Balancing & Autoscaling endpoints
+api_v1_router.include_router(cluster_router, prefix="", tags=["Cluster & Autoscaling"])

@@ -24,6 +24,7 @@ from backend.app.schemas.inference import (
     ChatMessage,
     OpenAIEngineModelCard,
 )
+from backend.app.services.load_balancer import load_balancer
 
 logger = logging.getLogger("inferx.inference_gateway")
 
@@ -61,9 +62,21 @@ async def forward_chat_completion(
 ) -> Tuple[ChatCompletionResponse, Dict[str, float]]:
     """
     Forward non-streaming chat completion to downstream inference engine.
-    Collects performance telemetry (latency_ms, ttft_ms, tokens_per_sec).
+    Routes to optimal replica via load balancer and collects telemetry.
     """
-    url = f"http://127.0.0.1:{deployment.port}/v1/chat/completions"
+    # Select replica instance via Load Balancer
+    replica = load_balancer.acquire_replica(deployment.id)
+    if not replica:
+        load_balancer.sync_deployment_replicas(
+            deployment_id=deployment.id,
+            base_port=deployment.port,
+            target_replicas=max(1, deployment.replicas),
+            is_running=(deployment.status == "running"),
+        )
+        replica = load_balancer.acquire_replica(deployment.id)
+
+    target_port = replica.port if replica else deployment.port
+    url = f"http://127.0.0.1:{target_port}/v1/chat/completions"
     payload = req.model_dump(exclude_none=True)
 
     start_time = time.perf_counter()
@@ -76,6 +89,8 @@ async def forward_chat_completion(
             metrics["latency_ms"] = round(latency_ms, 2)
 
             if resp.status_code == 200:
+                if replica:
+                    load_balancer.release_replica(replica, latency_ms, success=True)
                 data = resp.json()
                 parsed = ChatCompletionResponse.model_validate(data)
                 # Compute tokens per second
@@ -86,8 +101,12 @@ async def forward_chat_completion(
                 metrics["ttft_ms"] = round(latency_ms * 0.4, 2)  # Proxy approximation
                 return parsed, metrics
             else:
+                if replica:
+                    load_balancer.release_replica(replica, latency_ms, success=False)
                 logger.warning("Downstream engine returned %d: %s", resp.status_code, resp.text)
     except Exception as exc:
+        if replica:
+            load_balancer.release_replica(replica, 0.0, success=False)
         logger.info("Direct socket connect to %s failed (%s), providing fallback response", url, exc)
 
     # Simulated fallback response if downstream engine connection failed
@@ -95,7 +114,7 @@ async def forward_chat_completion(
     req_id = f"chatcmpl-{uuid.uuid4().hex[:12]}"
     last_msg = next((m.content for m in reversed(req.messages) if m.role == "user"), "Hello!")
     resp_text = (
-        f"[InferX Engine serving {deployment.name}]\n"
+        f"[InferX Engine serving {deployment.name} on port {target_port}]\n"
         f"Model: {deployment.model.repo_id if deployment.model else req.model}\n"
         f"Prompt echo: {last_msg[:80]}\n"
         f"Inference latency: {round(latency_ms, 2)}ms"
@@ -133,10 +152,24 @@ async def stream_chat_completion(
     """
     Forward streaming chat completion chunks from downstream engine via Server-Sent Events (SSE).
     """
-    url = f"http://127.0.0.1:{deployment.port}/v1/chat/completions"
+    # Select replica instance via Load Balancer
+    replica = load_balancer.acquire_replica(deployment.id)
+    if not replica:
+        load_balancer.sync_deployment_replicas(
+            deployment_id=deployment.id,
+            base_port=deployment.port,
+            target_replicas=max(1, deployment.replicas),
+            is_running=(deployment.status == "running"),
+        )
+        replica = load_balancer.acquire_replica(deployment.id)
+
+    target_port = replica.port if replica else deployment.port
+    url = f"http://127.0.0.1:{target_port}/v1/chat/completions"
     payload = req.model_dump(exclude_none=True)
     payload["stream"] = True
 
+    stream_success = False
+    start_time = time.perf_counter()
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:
             async with client.stream("POST", url, json=payload) as resp:
@@ -144,18 +177,23 @@ async def stream_chat_completion(
                     async for line in resp.aiter_lines():
                         if line:
                             yield f"{line}\n\n"
+                    stream_success = True
                     return
                 else:
                     logger.warning("Downstream stream failed with status %d", resp.status_code)
     except Exception as exc:
         logger.info("Direct socket streaming to %s failed (%s), providing fallback stream", url, exc)
+    finally:
+        if replica:
+            elapsed_ms = (time.perf_counter() - start_time) * 1000.0
+            load_balancer.release_replica(replica, elapsed_ms, success=stream_success)
 
     # Simulated fallback streaming SSE generator
     req_id = f"chatcmpl-{uuid.uuid4().hex[:12]}"
     created = int(time.time())
     last_msg = next((m.content for m in reversed(req.messages) if m.role == "user"), "Hello!")
     words = (
-        f"[InferX Gateway] Response from {req.model} via port {deployment.port}: "
+        f"[InferX Gateway] Response from {req.model} via replica port {target_port}: "
         f"Echoing '{last_msg[:60]}'. Streaming chunks delivered over SSE."
     ).split()
 
