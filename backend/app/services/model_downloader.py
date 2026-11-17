@@ -1,8 +1,13 @@
 """Model Weights Storage, Filesystem Caching, and Download Verification Service."""
 
-import os
+import sys
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
+
+# Bootstrap sys.path to ensure InferX root is resolvable in all runtime contexts
+_repo_root = str(Path(__file__).resolve().parent.parent.parent.parent)
+if _repo_root not in sys.path:
+    sys.path.insert(0, _repo_root)
 
 from backend.app.core.config import BASE_DIR, get_settings
 

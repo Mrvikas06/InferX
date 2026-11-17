@@ -1,7 +1,14 @@
 """InferX Backend Control Plane — FastAPI Entrypoint."""
 
 import logging
+import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
+
+# Bootstrap sys.path so InferX root is resolvable when main.py is run directly
+_repo_root = str(Path(__file__).resolve().parent.parent.parent)
+if _repo_root not in sys.path:
+    sys.path.insert(0, _repo_root)
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware

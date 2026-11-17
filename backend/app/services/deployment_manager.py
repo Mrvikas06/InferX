@@ -4,8 +4,15 @@ import asyncio
 from collections import defaultdict, deque
 from datetime import datetime, timezone
 import logging
+from pathlib import Path
 import socket
+import sys
 from typing import Any, Deque, Dict, List, Optional, Tuple
+
+# Bootstrap sys.path to ensure InferX root is resolvable in all runtime contexts
+_repo_root = str(Path(__file__).resolve().parent.parent.parent.parent)
+if _repo_root not in sys.path:
+    sys.path.insert(0, _repo_root)
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
