@@ -1,14 +1,30 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Filter,
+  Loader2,
   Play,
   Plus,
   Rocket,
   Search,
+  Sparkles,
 } from "lucide-react";
+
+interface BackendModel {
+  id: string;
+  name: string;
+  repo_id: string;
+  architecture: string;
+  parameters: string;
+  context_window: number;
+  precision: "FP16" | "BF16" | "FP8" | "AWQ" | "GPTQ";
+  size_on_disk_gb?: number;
+  min_gpu_vram_gb?: number;
+  is_downloaded: boolean;
+  tags?: string[];
+}
 
 interface ModelRecord {
   id: string;
@@ -113,6 +129,75 @@ export default function ModelsRegistryPage() {
   const [newRepoId, setNewRepoId] = useState("");
   const [newQuant, setNewQuant] = useState<"FP16" | "BF16" | "FP8" | "AWQ">("BF16");
 
+  // Inspection state
+  const [isInspecting, setIsInspecting] = useState(false);
+  const [inspectedMeta, setInspectedMeta] = useState<{
+    architecture?: string;
+    parameters?: string;
+    context_window?: number;
+    min_gpu_vram_gb?: number;
+  } | null>(null);
+
+  // Fetch registered models from backend on load
+  useEffect(() => {
+    let ignore = false;
+    async function loadModels() {
+      try {
+        const res = await fetch("/api/v1/models");
+        if (res.ok) {
+          const json = await res.json();
+          if (!ignore && json.data?.items?.length > 0) {
+            const backendModels: ModelRecord[] = json.data.items.map((m: BackendModel) => ({
+              id: m.id,
+              name: m.name,
+              repoId: m.repo_id,
+              architecture: m.architecture,
+              parameters: m.parameters,
+              contextWindow: `${Math.round(m.context_window / 1024)}k`,
+              quantization: m.precision || "BF16",
+              sizeOnDisk: m.size_on_disk_gb ? `${m.size_on_disk_gb} GB` : "Remote",
+              minGpuVram: m.min_gpu_vram_gb ? `${m.min_gpu_vram_gb} GB` : "Auto",
+              status: m.is_downloaded ? "ready" : "remote",
+              tags: m.tags || ["Imported"],
+            }));
+            setModels(backendModels);
+          }
+        }
+      } catch {
+        // Fallback to static catalog in standalone mode
+      }
+    }
+    loadModels();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const handleInspect = async () => {
+    if (!newRepoId.trim()) return;
+    setIsInspecting(true);
+    try {
+      const res = await fetch("/api/v1/models/inspect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo_id: newRepoId.trim() }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data) {
+          setInspectedMeta(json.data);
+          if (json.data.precision && ["BF16", "FP16", "FP8", "AWQ"].includes(json.data.precision)) {
+            setNewQuant(json.data.precision);
+          }
+        }
+      }
+    } catch {
+      // Offline fallback
+    } finally {
+      setIsInspecting(false);
+    }
+  };
+
   const filteredModels = models.filter((model) => {
     const matchesSearch =
       model.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -125,27 +210,69 @@ export default function ModelsRegistryPage() {
     return matchesSearch && matchesQuant;
   });
 
-  const handleAddModel = (e: React.FormEvent) => {
+  const handleAddModel = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newRepoId.trim()) return;
 
     const brandName = newRepoId.split("/")[1] || newRepoId;
-    const newModelItem: ModelRecord = {
-      id: `m-${Date.now()}`,
+    const modelPayload = {
       name: brandName.replace(/-/g, " "),
-      repoId: newRepoId.trim(),
-      architecture: "AutoModelForCausalLM",
-      parameters: "Custom",
-      contextWindow: "32k",
-      quantization: newQuant,
-      sizeOnDisk: "-",
-      minGpuVram: "1x GPU",
-      status: "downloading",
-      tags: ["Imported", "Custom"],
+      repo_id: newRepoId.trim(),
+      architecture: inspectedMeta?.architecture || "AutoModelForCausalLM",
+      parameters: inspectedMeta?.parameters || "Custom",
+      context_window: inspectedMeta?.context_window || 32768,
+      precision: newQuant,
+      min_gpu_vram_gb: inspectedMeta?.min_gpu_vram_gb || 16.0,
+      tags: ["Imported", "HuggingFace"],
     };
 
-    setModels([newModelItem, ...models]);
+    try {
+      const res = await fetch("/api/v1/models", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(modelPayload),
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        const m = json.data;
+        const newModelItem: ModelRecord = {
+          id: m.id,
+          name: m.name,
+          repoId: m.repo_id,
+          architecture: m.architecture,
+          parameters: m.parameters,
+          contextWindow: `${Math.round(m.context_window / 1024)}k`,
+          quantization: (m.precision || "BF16") as "FP16" | "BF16" | "FP8" | "AWQ" | "GPTQ",
+          sizeOnDisk: m.size_on_disk_gb ? `${m.size_on_disk_gb} GB` : "-",
+          minGpuVram: `${m.min_gpu_vram_gb || 16} GB`,
+          status: "downloading",
+          tags: m.tags || ["Imported"],
+        };
+        setModels([newModelItem, ...models]);
+      } else {
+        // Fallback local append
+        const newModelItem: ModelRecord = {
+          id: `m-${Date.now()}`,
+          name: brandName.replace(/-/g, " "),
+          repoId: newRepoId.trim(),
+          architecture: inspectedMeta?.architecture || "AutoModelForCausalLM",
+          parameters: inspectedMeta?.parameters || "Custom",
+          contextWindow: "32k",
+          quantization: newQuant,
+          sizeOnDisk: "-",
+          minGpuVram: `${inspectedMeta?.min_gpu_vram_gb || 16} GB`,
+          status: "downloading",
+          tags: ["Imported", "Custom"],
+        };
+        setModels([newModelItem, ...models]);
+      }
+    } catch {
+      // Local fallback
+    }
+
     setNewRepoId("");
+    setInspectedMeta(null);
     setShowAddModal(false);
   };
 
@@ -220,71 +347,83 @@ export default function ModelsRegistryPage() {
                     {model.repoId}
                   </p>
                 </div>
-                <span className="text-xs font-mono text-zinc-300 px-2 py-0.5 rounded border border-zinc-800 bg-zinc-900">
-                  {model.status === "ready" ? "Cached" : "Downloading"}
-                </span>
-              </div>
-
-              {/* Tags */}
-              <div className="flex flex-wrap gap-1.5 mt-3.5">
-                {model.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-xs px-2.5 py-0.5 rounded border border-zinc-800 bg-zinc-900/80 text-zinc-400"
-                  >
-                    {tag}
-                  </span>
-                ))}
-                <span className="text-xs px-2.5 py-0.5 rounded border border-zinc-800 bg-zinc-900 font-mono text-zinc-300 font-medium">
-                  {model.quantization}
+                <span
+                  className={`text-[11px] font-medium font-mono px-2 py-0.5 rounded border ${
+                    model.status === "ready"
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                      : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                  }`}
+                >
+                  {model.status}
                 </span>
               </div>
 
               {/* Specs Grid */}
-              <div className="grid grid-cols-2 gap-3 mt-4 pt-3.5 border-t border-zinc-800/80 text-sm">
+              <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-zinc-800/60 text-xs">
                 <div>
-                  <span className="text-xs text-zinc-400 block mb-0.5">Parameters</span>
-                  <div className="text-zinc-200 font-mono tabular-nums font-medium">
+                  <span className="text-zinc-500 block">Params</span>
+                  <span className="text-zinc-200 font-mono font-medium">
                     {model.parameters}
-                  </div>
+                  </span>
                 </div>
                 <div>
-                  <span className="text-xs text-zinc-400 block mb-0.5">Context</span>
-                  <div className="text-zinc-200 font-mono tabular-nums font-medium">
+                  <span className="text-zinc-500 block">Context</span>
+                  <span className="text-zinc-200 font-mono font-medium">
                     {model.contextWindow}
-                  </div>
+                  </span>
                 </div>
                 <div>
-                  <span className="text-xs text-zinc-400 block mb-0.5">Size</span>
-                  <div className="text-zinc-200 font-mono tabular-nums font-medium">
-                    {model.sizeOnDisk}
-                  </div>
+                  <span className="text-zinc-500 block">Precision</span>
+                  <span className="text-zinc-200 font-mono font-medium">
+                    {model.quantization}
+                  </span>
                 </div>
                 <div>
-                  <span className="text-xs text-zinc-400 block mb-0.5">Min GPU</span>
-                  <div className="text-zinc-200 font-mono font-medium">
+                  <span className="text-zinc-500 block">Min VRAM</span>
+                  <span className="text-zinc-200 font-mono font-medium">
                     {model.minGpuVram}
-                  </div>
+                  </span>
                 </div>
+              </div>
+
+              {/* Tags */}
+              <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-zinc-800/40">
+                {model.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-[11px] px-2 py-0.5 rounded bg-zinc-800/80 text-zinc-400 border border-zinc-700/50"
+                  >
+                    {tag}
+                  </span>
+                ))}
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="pt-3.5 border-t border-zinc-800/80 flex items-center justify-between gap-2.5">
-              <Link
-                href="/dashboard/deployments"
-                className="flex-1 h-9 rounded-md bg-zinc-100 hover:bg-white text-zinc-950 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
-              >
-                <Rocket className="size-3.5" />
-                <span>Deploy</span>
-              </Link>
-              <Link
-                href="/dashboard/playground"
-                className="h-9 px-4 rounded-md border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
-              >
-                <Play className="size-3.5 text-zinc-400" />
-                <span>Test</span>
-              </Link>
+            {/* Action Buttons */}
+            <div className="pt-3 border-t border-zinc-800/80 flex items-center justify-between gap-3">
+              <span className="text-xs text-zinc-400 font-mono">
+                {model.sizeOnDisk}
+              </span>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/dashboard/deployments?model=${encodeURIComponent(
+                    model.repoId
+                  )}`}
+                  className="px-3 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1.5 transition-colors border border-zinc-700/50"
+                >
+                  <Rocket className="size-3.5" />
+                  <span>Deploy</span>
+                </Link>
+                <Link
+                  href={`/dashboard/playground?model=${encodeURIComponent(
+                    model.repoId
+                  )}`}
+                  className="p-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors border border-zinc-700/50"
+                  title="Test in Playground"
+                >
+                  <Play className="size-3.5" />
+                </Link>
+              </div>
             </div>
           </div>
         ))}
@@ -299,7 +438,10 @@ export default function ModelsRegistryPage() {
                 Register HuggingFace model
               </h3>
               <button
-                onClick={() => setShowAddModal(false)}
+                onClick={() => {
+                  setShowAddModal(false);
+                  setInspectedMeta(null);
+                }}
                 className="text-zinc-400 hover:text-white text-sm"
               >
                 ✕
@@ -311,15 +453,42 @@ export default function ModelsRegistryPage() {
                 <label className="block text-sm font-medium text-zinc-300 mb-1.5">
                   Repository ID
                 </label>
-                <input
-                  type="text"
-                  placeholder="meta-llama/Llama-3.3-70B-Instruct"
-                  value={newRepoId}
-                  onChange={(e) => setNewRepoId(e.target.value)}
-                  required
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-3.5 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-700 font-mono"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="meta-llama/Llama-3.1-8B-Instruct"
+                    value={newRepoId}
+                    onChange={(e) => setNewRepoId(e.target.value)}
+                    required
+                    className="flex-1 bg-zinc-950 border border-zinc-800 rounded-md px-3.5 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-700 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleInspect}
+                    disabled={isInspecting || !newRepoId.trim()}
+                    className="px-3 py-2 rounded-md border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    {isInspecting ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="size-3.5 text-amber-400" />
+                    )}
+                    <span>Inspect</span>
+                  </button>
+                </div>
               </div>
+
+              {inspectedMeta && (
+                <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-md space-y-1.5 text-xs">
+                  <div className="text-zinc-400 font-medium">Inspected Metadata:</div>
+                  <div className="grid grid-cols-2 gap-1 font-mono text-zinc-300">
+                    <div>Arch: {inspectedMeta.architecture}</div>
+                    <div>Params: {inspectedMeta.parameters}</div>
+                    <div>Context: {inspectedMeta.context_window}</div>
+                    <div>VRAM: {inspectedMeta.min_gpu_vram_gb} GB</div>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-zinc-300 mb-1.5">
@@ -344,7 +513,10 @@ export default function ModelsRegistryPage() {
               <div className="flex items-center justify-end gap-3 pt-3">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setInspectedMeta(null);
+                  }}
                   className="px-4 py-2 rounded-md border border-zinc-800 bg-zinc-900 text-zinc-300 text-sm font-medium hover:bg-zinc-800"
                 >
                   Cancel
@@ -353,7 +525,7 @@ export default function ModelsRegistryPage() {
                   type="submit"
                   className="px-5 py-2 rounded-md bg-zinc-100 hover:bg-white text-zinc-950 text-sm font-medium transition-colors"
                 >
-                  Queue download
+                  Register model
                 </button>
               </div>
             </form>

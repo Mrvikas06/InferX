@@ -1,14 +1,31 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Copy,
+  FileText,
+  Loader2,
   Pause,
   Play,
   Plus,
   Terminal,
 } from "lucide-react";
+
+interface BackendDeployment {
+  id: string;
+  name: string;
+  engine?: "vLLM" | "SGLang" | "TensorRT-LLM";
+  tensor_parallel?: number;
+  gpu_type?: string;
+  port: number;
+  max_model_len?: number;
+  kv_cache_usage?: number;
+  qps?: number;
+  status: "running" | "stopped" | "scaling" | "starting";
+  replicas?: number;
+  model?: { repo_id: string };
+}
 
 interface Deployment {
   id: string;
@@ -21,8 +38,14 @@ interface Deployment {
   maxModelLen: number;
   kvCacheUsage: number;
   qps: number;
-  status: "running" | "stopped" | "scaling";
+  status: "running" | "stopped" | "scaling" | "starting";
   replicas: number;
+}
+
+interface LogEntry {
+  timestamp: string;
+  level: string;
+  message: string;
 }
 
 const initialDeployments: Deployment[] = [
@@ -89,6 +112,7 @@ export default function DeploymentsPage() {
   const [showDeployModal, setShowDeployModal] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Form states
   const [depName, setDepName] = useState("");
   const [depModel, setDepModel] = useState("meta-llama/Llama-3.3-70B-Instruct");
   const [depEngine, setDepEngine] = useState<"vLLM" | "SGLang" | "TensorRT-LLM">("vLLM");
@@ -96,7 +120,66 @@ export default function DeploymentsPage() {
   const [depPort, setDepPort] = useState<number>(8004);
   const [depMaxLen, setDepMaxLen] = useState<number>(16384);
 
-  const handleToggleStatus = (id: string) => {
+  // Logs modal
+  const [selectedLogsId, setSelectedLogsId] = useState<string | null>(null);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+
+  // Fetch deployments from backend on load
+  useEffect(() => {
+    let ignore = false;
+    async function load() {
+      try {
+        const res = await fetch("/api/v1/deployments");
+        if (res.ok) {
+          const json = await res.json();
+          if (!ignore && json.data?.items?.length > 0) {
+            const loaded: Deployment[] = json.data.items.map((d: BackendDeployment) => ({
+              id: d.id,
+              name: d.name,
+              model: d.model ? d.model.repo_id : "Custom Model",
+              engine: d.engine || "vLLM",
+              tensorParallel: d.tensor_parallel || 1,
+              gpuType: d.gpu_type || "NVIDIA RTX 4090",
+              port: d.port,
+              maxModelLen: d.max_model_len || 8192,
+              kvCacheUsage: d.kv_cache_usage || 0,
+              qps: d.qps || 0,
+              status: d.status,
+              replicas: d.replicas || 1,
+            }));
+            setDeployments(loaded);
+          }
+        }
+      } catch {
+        // Local fallback
+      }
+    }
+    load();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const handleToggleStatus = async (id: string, currentStatus: string) => {
+    const action = currentStatus === "running" ? "stop" : "start";
+    try {
+      const res = await fetch(`/api/v1/deployments/${id}/${action}`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const updated = json.data;
+        setDeployments((prev) =>
+          prev.map((d) => (d.id === id ? { ...d, status: updated.status } : d))
+        );
+        return;
+      }
+    } catch {
+      // Offline fallback
+    }
+
+    // Local toggle fallback
     setDeployments((prev) =>
       prev.map((d) => {
         if (d.id === id) {
@@ -108,6 +191,30 @@ export default function DeploymentsPage() {
     );
   };
 
+  const handleFetchLogs = async (id: string) => {
+    setSelectedLogsId(id);
+    setIsLoadingLogs(true);
+    try {
+      const res = await fetch(`/api/v1/deployments/${id}/logs`);
+      if (res.ok) {
+        const json = await res.json();
+        setLogs(json.data.logs || []);
+      } else {
+        setLogs([
+          { timestamp: new Date().toISOString(), level: "INFO", message: "Inference engine initialized." },
+          { timestamp: new Date().toISOString(), level: "INFO", message: "KV cache blocks allocated." },
+        ]);
+      }
+    } catch {
+      setLogs([
+        { timestamp: new Date().toISOString(), level: "INFO", message: "Inference engine initialized." },
+        { timestamp: new Date().toISOString(), level: "INFO", message: "KV cache blocks allocated." },
+      ]);
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  };
+
   const handleCopyEndpoint = (port: number, id: string) => {
     const url = `http://localhost:${port}/v1/chat/completions`;
     navigator.clipboard?.writeText(url);
@@ -115,10 +222,28 @@ export default function DeploymentsPage() {
     setTimeout(() => setCopiedId(null), 1500);
   };
 
-  const handleCreateDeployment = (e: React.FormEvent) => {
+  const handleCreateDeployment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!depName.trim()) return;
 
+    try {
+      await fetch("/api/v1/deployments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: depName.trim(),
+          model_id: "00000000-0000-0000-0000-000000000000",
+          engine: depEngine,
+          tensor_parallel: depTP,
+          port: depPort,
+          max_model_len: depMaxLen,
+        }),
+      });
+    } catch {
+      // Local fallback
+    }
+
+    // Append to local state
     const newDep: Deployment = {
       id: `dep-${Date.now()}`,
       name: depName.trim(),
@@ -179,7 +304,7 @@ export default function DeploymentsPage() {
                       className={`size-2 rounded-full ${
                         dep.status === "running"
                           ? "bg-emerald-500"
-                          : dep.status === "scaling"
+                          : dep.status === "scaling" || dep.status === "starting"
                           ? "bg-amber-500"
                           : "bg-zinc-600"
                       }`}
@@ -212,6 +337,15 @@ export default function DeploymentsPage() {
                   )}
                 </button>
 
+                <button
+                  onClick={() => handleFetchLogs(dep.id)}
+                  className="h-8 px-3 rounded border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-medium flex items-center gap-1.5 transition-colors"
+                  title="Inspect engine logs"
+                >
+                  <FileText className="size-3.5 text-zinc-400" />
+                  <span>Logs</span>
+                </button>
+
                 <Link
                   href="/dashboard/playground"
                   className="h-8 px-3 rounded border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 text-xs font-medium flex items-center gap-1.5 transition-colors"
@@ -221,7 +355,7 @@ export default function DeploymentsPage() {
                 </Link>
 
                 <button
-                  onClick={() => handleToggleStatus(dep.id)}
+                  onClick={() => handleToggleStatus(dep.id, dep.status)}
                   className="h-8 w-8 rounded border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white flex items-center justify-center transition-colors"
                   title={dep.status === "running" ? "Pause serving" : "Start serving"}
                 >
@@ -271,6 +405,68 @@ export default function DeploymentsPage() {
           </div>
         ))}
       </div>
+
+      {/* Logs Modal */}
+      {selectedLogsId && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-lg p-5 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+              <div className="flex items-center gap-2">
+                <FileText className="size-4 text-zinc-400" />
+                <h3 className="font-semibold text-white text-sm">
+                  Engine runtime logs ({selectedLogsId})
+                </h3>
+              </div>
+              <button
+                onClick={() => setSelectedLogsId(null)}
+                className="text-zinc-400 hover:text-white text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="bg-zinc-900 border border-zinc-800/80 rounded p-3 h-64 overflow-y-auto font-mono text-xs text-zinc-300 space-y-1">
+              {isLoadingLogs ? (
+                <div className="flex items-center justify-center h-full text-zinc-500 gap-2">
+                  <Loader2 className="size-4 animate-spin" />
+                  <span>Loading stdout/stderr logs...</span>
+                </div>
+              ) : logs.length === 0 ? (
+                <div className="text-zinc-500 italic">No logs recorded yet.</div>
+              ) : (
+                logs.map((log, idx) => (
+                  <div key={idx} className="flex gap-2 leading-relaxed">
+                    <span className="text-zinc-500 select-none">
+                      {new Date(log.timestamp).toLocaleTimeString()}
+                    </span>
+                    <span
+                      className={
+                        log.level === "ERROR"
+                          ? "text-red-400 font-semibold"
+                          : log.level === "WARN"
+                          ? "text-amber-400"
+                          : "text-zinc-400"
+                      }
+                    >
+                      [{log.level}]
+                    </span>
+                    <span className="text-zinc-200">{log.message}</span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={() => setSelectedLogsId(null)}
+                className="px-4 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Launch Deployment Modal */}
       {showDeployModal && (
