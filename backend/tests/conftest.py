@@ -19,6 +19,7 @@ os.environ["APP_ENV"] = "testing"
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 os.environ["REDIS_URL"] = "redis://localhost:6379/15"
 
+from backend.app.core.rate_limit import reset_rate_limits
 from backend.app.db.base import Base
 from backend.app.db.session import get_db
 from backend.app.main import app
@@ -42,11 +43,13 @@ TestSessionLocal = async_sessionmaker(
 @pytest_asyncio.fixture(scope="function", autouse=True)
 async def setup_test_db():
     """Create all tables in memory before each test and drop them after."""
+    reset_rate_limits()
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+    reset_rate_limits()
 
 
 @pytest_asyncio.fixture(scope="function")
