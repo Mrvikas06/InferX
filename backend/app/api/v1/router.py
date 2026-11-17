@@ -9,6 +9,7 @@ from backend.app.api.v1.deployments import router as deployments_router
 from backend.app.api.v1.health import router as health_router
 from backend.app.api.v1.inference import router as inference_router
 from backend.app.api.v1.models import router as models_router
+from backend.app.api.v1.telemetry import router as telemetry_router
 
 api_v1_router = APIRouter()
 
@@ -32,3 +33,6 @@ api_v1_router.include_router(deployments_router, prefix="/deployments", tags=["D
 
 # Mount OpenAI Inference Gateway endpoints
 api_v1_router.include_router(inference_router, prefix="", tags=["Inference Gateway"])
+
+# Mount Telemetry and Observability endpoints
+api_v1_router.include_router(telemetry_router, prefix="/telemetry", tags=["Hardware & Telemetry"])

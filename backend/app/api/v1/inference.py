@@ -120,6 +120,18 @@ async def create_chat_completion(
     # 4. Handle Non-Streaming Response
     result, metrics = await forward_chat_completion(deployment, body)
 
+    # Record telemetry event for live observability
+    try:
+        from backend.app.services.telemetry_service import telemetry_service
+        telemetry_service.record_inference_event(
+            latency_ms=metrics.get("latency_ms", 25.0),
+            ttft_ms=metrics.get("ttft_ms", 12.0),
+            prompt_tokens=result.usage.prompt_tokens,
+            completion_tokens=result.usage.completion_tokens,
+        )
+    except Exception as exc:
+        logger.debug("Failed to record inference telemetry: %s", exc)
+
     # Inject performance telemetry into response headers
     if "latency_ms" in metrics:
         response.headers["X-InferX-Latency-Ms"] = str(metrics["latency_ms"])
