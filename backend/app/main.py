@@ -40,6 +40,18 @@ async def lifespan(app: FastAPI):
     )
     logger.info("Control plane listening on %s:%d", settings.BACKEND_HOST, settings.BACKEND_PORT)
 
+    # Auto-initialize SQLite schema if configured
+    if "sqlite" in settings.DATABASE_URL:
+        try:
+            from backend.app.db.base import Base
+            from backend.app.db.session import engine
+            import backend.app.models  # noqa: F401
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            logger.info("SQLite database schema initialized successfully")
+        except Exception as exc:
+            logger.warning("Could not auto-initialize SQLite schema: %s", exc)
+
     yield
 
     logger.info("Shutting down %s control plane gracefully", settings.APP_NAME)

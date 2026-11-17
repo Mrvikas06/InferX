@@ -20,8 +20,11 @@ dist/
 .vscode/
 .idea/
 
-# Logs
+# Logs & Local DBs
 *.log
+*.db
+*.sqlite
+*.sqlite3
 
 # Model weights & checkpoints
 *.safetensors
