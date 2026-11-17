@@ -24,6 +24,7 @@ from backend.app.db.base import Base
 from backend.app.db.session import get_db
 from backend.app.models.api_key import ApiKey
 from backend.app.models.audit_log import AuditLog
+from backend.app.models.benchmark import Benchmark
 from backend.app.models.deployment import Deployment
 from backend.app.models.model import Model
 from backend.app.models.user import User
