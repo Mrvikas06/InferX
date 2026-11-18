@@ -5,7 +5,7 @@ import io
 import json
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -39,7 +39,13 @@ async def list_audit_logs(
     db: AsyncSession = Depends(get_db),
     auth: Optional[AuthContext] = Depends(get_optional_auth_context),
 ) -> APIResponse[AuditLogListResponse]:
-    """Retrieve security audit trails (accessible to admin or default local operator)."""
+    """Retrieve security audit trails (strictly requires admin role if authenticated)."""
+    if auth and not has_sufficient_role(auth.role, "admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: requires 'admin' role",
+        )
+
     items = await audit_log_repository.list_logs(
         db=db,
         action=action,
@@ -78,6 +84,12 @@ async def export_audit_logs(
     auth: Optional[AuthContext] = Depends(get_optional_auth_context),
 ) -> Response:
     """Export compliance audit trails in streaming CSV or JSON format."""
+    if auth and not has_sufficient_role(auth.role, "admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: requires 'admin' role",
+        )
+
     logs = await audit_log_repository.list_logs(
         db=db,
         action=action,

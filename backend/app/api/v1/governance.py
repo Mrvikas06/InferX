@@ -184,7 +184,8 @@ async def delete_quota_policy(
     if not policy:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quota policy not found")
 
-    await quota_repository.remove(db, id=policy_id)
+    await quota_repository.delete(db, id=policy_id)
+    await db.commit()
     return APIResponse[dict](
         success=True,
         data={"deleted_id": policy_id},

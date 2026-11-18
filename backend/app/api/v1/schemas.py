@@ -13,6 +13,7 @@ class APIResponse(BaseModel, Generic[T]):
 
     success: bool = True
     data: Optional[T] = None
+    message: Optional[str] = None
     error: Optional[str] = None
     correlation_id: Optional[str] = None
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
