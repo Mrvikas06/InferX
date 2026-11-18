@@ -22,6 +22,7 @@ from backend.app.core.config import get_settings
 from backend.app.core.logging import get_correlation_id, setup_logging
 from backend.app.core.redis import close_redis_pool
 from backend.app.middleware.correlation import CorrelationMiddleware
+from backend.app.middleware.security import SecurityHeadersMiddleware
 
 settings = get_settings()
 logger = logging.getLogger("inferx.main")
@@ -75,6 +76,9 @@ def create_app() -> FastAPI:
 
     # 1. Correlation & Telemetry Middleware (runs first on request / last on response)
     app.add_middleware(CorrelationMiddleware)
+
+    # 2. Production Security Hardening Headers Middleware
+    app.add_middleware(SecurityHeadersMiddleware)
 
     # 2. CORS Middleware
     app.add_middleware(
