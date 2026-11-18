@@ -60,6 +60,11 @@ const navItems: NavItem[] = [
     href: "/dashboard/analytics",
     icon: LineChart,
   },
+  {
+    title: "Governance",
+    href: "/dashboard/governance",
+    icon: ShieldCheck,
+  },
 ];
 
 export default function DashboardLayout({
