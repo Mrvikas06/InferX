@@ -12,7 +12,7 @@ if _repo_root not in sys.path:
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 from backend.app.api.v1.health import router as health_router
 from backend.app.api.v1.inference import router as inference_router
@@ -114,6 +114,68 @@ def create_app() -> FastAPI:
 
     # 6. Direct OpenAI-Compatible Gateway Router (for standard SDKs with base_url="http://host:port/v1")
     app.include_router(inference_router, prefix="/v1", tags=["OpenAI Inference Gateway"])
+
+    # 7. Prometheus Metrics Scrape Endpoint
+    @app.get("/metrics", response_class=PlainTextResponse, tags=["Observability"])
+    async def prometheus_metrics() -> str:
+        """Expose Prometheus formatted metric series for scraping."""
+        try:
+            from backend.app.services.gpu_monitor import get_gpu_telemetry
+            from backend.app.services.load_balancer import load_balancer
+            from backend.app.services.telemetry_service import telemetry_service
+        except ImportError:
+            from app.services.gpu_monitor import get_gpu_telemetry
+            from app.services.load_balancer import load_balancer
+            from app.services.telemetry_service import telemetry_service
+
+        snapshot = telemetry_service.get_live_inference_snapshot()
+        gpus = get_gpu_telemetry()
+        cluster_stats = load_balancer.get_cluster_stats()
+        active_reqs = cluster_stats.get("total_active_requests", 0)
+
+        lines = [
+            "# HELP inferx_active_requests Number of current in-flight inference requests",
+            "# TYPE inferx_active_requests gauge",
+            f"inferx_active_requests {active_reqs}",
+            "# HELP inferx_requests_total Total number of inference requests processed",
+            "# TYPE inferx_requests_total counter",
+            f"inferx_requests_total {snapshot.total_requests}",
+            "# HELP inferx_qps Current request throughput per second",
+            "# TYPE inferx_qps gauge",
+            f"inferx_qps {snapshot.qps:.2f}",
+            "# HELP inferx_tokens_per_second Current token throughput per second",
+            "# TYPE inferx_tokens_per_second gauge",
+            f"inferx_tokens_per_second {snapshot.tokens_per_second:.2f}",
+            "# HELP inferx_ttft_avg_ms Average time to first token in milliseconds",
+            "# TYPE inferx_ttft_avg_ms gauge",
+            f"inferx_ttft_avg_ms {snapshot.avg_ttft_ms:.2f}",
+            "# HELP inferx_latency_p50_ms 50th percentile latency in milliseconds",
+            "# TYPE inferx_latency_p50_ms gauge",
+            f"inferx_latency_p50_ms {snapshot.latency_p50_ms:.2f}",
+            "# HELP inferx_latency_p95_ms 95th percentile latency in milliseconds",
+            "# TYPE inferx_latency_p95_ms gauge",
+            f"inferx_latency_p95_ms {snapshot.latency_p95_ms:.2f}",
+            "# HELP inferx_latency_p99_ms 99th percentile latency in milliseconds",
+            "# TYPE inferx_latency_p99_ms gauge",
+            f"inferx_latency_p99_ms {snapshot.latency_p99_ms:.2f}",
+            "# HELP inferx_kv_cache_usage_percent Global KV-cache allocation percentage",
+            "# TYPE inferx_kv_cache_usage_percent gauge",
+            f"inferx_kv_cache_usage_percent {snapshot.kv_cache_usage_pct:.1f}",
+            "# HELP inferx_active_deployments Number of running model deployments",
+            "# TYPE inferx_active_deployments gauge",
+            f"inferx_active_deployments {snapshot.active_deployments}",
+        ]
+
+        for gpu in gpus:
+            temp = gpu.temperature_c if gpu.temperature_c is not None else 45.0
+            lines.extend([
+                f'inferx_gpu_utilization_percent{{gpu="{gpu.index}",name="{gpu.name}"}} {gpu.gpu_utilization_pct:.1f}',
+                f'inferx_gpu_memory_used_mb{{gpu="{gpu.index}",name="{gpu.name}"}} {gpu.memory_used_mb:.1f}',
+                f'inferx_gpu_memory_total_mb{{gpu="{gpu.index}",name="{gpu.name}"}} {gpu.memory_total_mb:.1f}',
+                f'inferx_gpu_temperature_celsius{{gpu="{gpu.index}",name="{gpu.name}"}} {temp:.1f}',
+            ])
+
+        return "\n".join(lines) + "\n"
 
     return app
 
