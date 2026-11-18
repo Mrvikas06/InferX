@@ -5,6 +5,7 @@ from backend.app.models.audit_log import AuditLog
 from backend.app.models.benchmark import Benchmark
 from backend.app.models.deployment import Deployment
 from backend.app.models.model import Model
+from backend.app.models.quota import QuotaPolicy
 from backend.app.models.scaling import ScalingPolicy
 from backend.app.models.user import User
 
@@ -14,6 +15,7 @@ __all__ = [
     "ApiKey",
     "AuditLog",
     "Benchmark",
+    "QuotaPolicy",
     "ScalingPolicy",
     "User",
 ]
