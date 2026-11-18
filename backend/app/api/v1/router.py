@@ -8,6 +8,7 @@ from backend.app.api.v1.auth import router as auth_router
 from backend.app.api.v1.benchmarks import router as benchmarks_router
 from backend.app.api.v1.cluster import router as cluster_router
 from backend.app.api.v1.deployments import router as deployments_router
+from backend.app.api.v1.governance import router as governance_router
 from backend.app.api.v1.health import router as health_router
 from backend.app.api.v1.inference import router as inference_router
 from backend.app.api.v1.models import router as models_router
@@ -44,3 +45,6 @@ api_v1_router.include_router(benchmarks_router, prefix="/benchmarks", tags=["Ben
 
 # Mount Cluster Scaling, Load Balancing & Autoscaling endpoints
 api_v1_router.include_router(cluster_router, prefix="", tags=["Cluster & Autoscaling"])
+
+# Mount Enterprise Governance & Token Quotas endpoints
+api_v1_router.include_router(governance_router, prefix="", tags=["Enterprise Governance & Quotas"])
