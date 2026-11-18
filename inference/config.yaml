@@ -1,0 +1,22 @@
+# InferX Dedicated Inference Worker Configuration
+worker:
+  worker_id: "worker-01"
+  control_plane_url: "http://localhost:8000"
+  listen_host: "0.0.0.0"
+  listen_port: 8001
+  heartbeat_interval_sec: 10
+
+model:
+  model_id: "meta-llama/Llama-3.3-70B-Instruct"
+  tensor_parallel_size: 1
+  pipeline_parallel_size: 1
+  gpu_memory_utilization: 0.90
+  max_model_len: 8192
+  quantization: null # "awq", "gptq", "bitsandbytes", or null
+  dtype: "bfloat16"
+  enforce_eager: false
+
+runtime:
+  mode: "simulation" # "vllm" or "simulation"
+  mock_latency_ms: 45.0
+  tokens_per_second: 85.0
