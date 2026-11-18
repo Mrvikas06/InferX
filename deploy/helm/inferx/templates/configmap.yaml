@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "inferx.fullname" . }}-config
+  labels:
+    {{- include "inferx.labels" . | nindent 4 }}
+data:
+  APP_NAME: "InferX"
+  APP_ENV: {{ .Values.global.environment | quote }}
+  BACKEND_HOST: "0.0.0.0"
+  BACKEND_PORT: {{ .Values.backend.service.port | quote }}
+  BACKEND_INTERNAL_URL: {{ printf "http://%s-backend:%d" (include "inferx.fullname" .) (int .Values.backend.service.port) | quote }}
+  LOG_LEVEL: "INFO"
+  LOG_FORMAT: "json"

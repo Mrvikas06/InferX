@@ -1,0 +1,104 @@
+# Default values for inferx chart.
+global:
+  environment: production
+  imagePullSecrets: []
+
+# Backend Control Plane & Gateway Configuration
+backend:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/mrvikas06/inferx-backend
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  service:
+    type: ClusterIP
+    port: 8000
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4096Mi
+    requests:
+      cpu: 500m
+      memory: 1024Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 75
+    targetMemoryUtilizationPercentage: 80
+  gpu:
+    enabled: false
+    count: 1
+    type: "nvidia.com/gpu"
+
+# Frontend Next.js Web Dashboard
+frontend:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/mrvikas06/inferx-frontend
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  service:
+    type: ClusterIP
+    port: 3000
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2048Mi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+
+# Ingress Settings
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "128m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+  hosts:
+    - host: inferx.local
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: backend
+        - path: /v1
+          pathType: Prefix
+          service: backend
+        - path: /docs
+          pathType: Prefix
+          service: backend
+        - path: /
+          pathType: Prefix
+          service: frontend
+  tls: []
+
+# PostgreSQL Subchart / Embedded StatefulSet Config
+postgresql:
+  enabled: true
+  auth:
+    database: inferx
+    username: inferx
+    password: "change_me_super_secure_postgres"
+  persistence:
+    size: 20Gi
+    storageClass: ""
+
+# Redis Subchart / Embedded Cache Config
+redis:
+  enabled: true
+  auth:
+    password: "change_me_super_secure_redis"
+  master:
+    persistence:
+      size: 5Gi
+
+# Application Security & Secrets
+security:
+  jwtSecretKey: "inferx-helm-super-secret-jwt-key"

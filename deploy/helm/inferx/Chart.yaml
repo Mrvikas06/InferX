@@ -1,0 +1,16 @@
+apiVersion: v2
+name: inferx
+description: Production-grade Helm chart for InferX — Self-Hosted LLM Inference Control Plane & Gateway
+type: application
+version: 0.1.0
+appVersion: "0.4.2"
+keywords:
+  - llm
+  - inference
+  - vllm
+  - ai
+  - kubernetes
+home: https://github.com/Mrvikas06/InferX
+maintainers:
+  - name: InferX Core Team
+    email: maintainers@inferx.ai
