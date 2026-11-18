@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+  scrape_timeout: 4s
+
+scrape_configs:
+  - job_name: "inferx-backend"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["host.docker.internal:8000", "backend:8000"]
+        labels:
+          environment: "production"
+          service: "inferx-control-plane"
+
+  - job_name: "inferx-workers"
+    metrics_path: "/health"
+    static_configs:
+      - targets: ["host.docker.internal:8001", "host.docker.internal:8002"]
+        labels:
+          environment: "production"
+          service: "vllm-serving-worker"
+
+  - job_name: "dcgm-exporter"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["dcgm-exporter:9400"]
+        labels:
+          environment: "production"
+          service: "nvidia-dcgm"

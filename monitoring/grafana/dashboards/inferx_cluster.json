@@ -1,0 +1,133 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "Cluster RPS",
+      "type": "stat",
+      "targets": [{ "expr": "inferx_qps", "legendFormat": "QPS" }],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+      "title": "P95 Latency",
+      "type": "stat",
+      "targets": [{ "expr": "inferx_latency_p95_ms", "legendFormat": "P95 ms" }],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      },
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "id": 3,
+      "title": "KV Cache Usage",
+      "type": "gauge",
+      "targets": [{ "expr": "inferx_kv_cache_usage_percent", "legendFormat": "KV Cache %" }],
+      "fieldConfig": {
+        "defaults": {
+          "max": 100,
+          "min": 0,
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 75 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "id": 4,
+      "title": "Active In-Flight Requests",
+      "type": "stat",
+      "targets": [{ "expr": "inferx_active_requests", "legendFormat": "Active" }],
+      "options": { "colorMode": "value", "graphMode": "none" }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "id": 5,
+      "title": "Latency Percentiles (P50, P95, P99)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "inferx_latency_p50_ms", "legendFormat": "P50 Latency" },
+        { "expr": "inferx_latency_p95_ms", "legendFormat": "P95 Latency" },
+        { "expr": "inferx_latency_p99_ms", "legendFormat": "P99 Latency" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "id": 6,
+      "title": "Token Generation Velocity",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "inferx_tokens_per_second", "legendFormat": "Tokens / sec" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "tps" } }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "id": 7,
+      "title": "GPU Core Utilization (%)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "inferx_gpu_utilization_percent", "legendFormat": "GPU {{gpu}}: {{name}}" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "max": 100,
+          "min": 0,
+          "unit": "percent"
+        }
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "id": 8,
+      "title": "GPU VRAM Allocation (MB)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "inferx_gpu_memory_used_mb", "legendFormat": "Used: GPU {{gpu}}" },
+        { "expr": "inferx_gpu_memory_total_mb", "legendFormat": "Total: GPU {{gpu}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "decbytes" } }
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["inferx", "vllm", "gpu", "llm"],
+  "time": { "from": "now-15m", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "InferX — Cluster & Inference Telemetry",
+  "uid": "inferx-cluster-telemetry",
+  "version": 1
+}

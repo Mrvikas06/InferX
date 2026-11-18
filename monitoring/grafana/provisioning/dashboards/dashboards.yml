@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: "InferX Dashboards"
+    orgId: 1
+    folder: "InferX"
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
