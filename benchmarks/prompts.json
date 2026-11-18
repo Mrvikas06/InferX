@@ -1,0 +1,26 @@
+[
+  {
+    "id": "prompt-001",
+    "category": "reasoning",
+    "prompt": "Explain the architectural differences between continuous batching and static batching in large language model inference engines.",
+    "expected_min_tokens": 120
+  },
+  {
+    "id": "prompt-002",
+    "category": "code",
+    "prompt": "Write a high-performance Python coroutine using asyncio that performs concurrent HTTP health checks against an array of replica endpoints with exponential backoff.",
+    "expected_min_tokens": 150
+  },
+  {
+    "id": "prompt-003",
+    "category": "summarization",
+    "prompt": "Summarize the key trade-offs between tensor parallelism and pipeline parallelism when serving 70B parameter models on clusters with 80GB H100 SXM5 versus 24GB RTX 4090 GPUs.",
+    "expected_min_tokens": 100
+  },
+  {
+    "id": "prompt-004",
+    "category": "math",
+    "prompt": "Derive the mathematical memory footprint formula for the PagedAttention key-value (KV) cache for an arbitrary context length L, batch size B, number of layers N, and hidden dimension D.",
+    "expected_min_tokens": 140
+  }
+]
