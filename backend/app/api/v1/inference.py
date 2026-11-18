@@ -16,6 +16,7 @@ from backend.app.schemas.inference import (
     OpenAIEngineModelCard,
     OpenAIModelListResponse,
 )
+from backend.app.repositories.quota_repository import quota_repository
 from backend.app.services.inference_gateway import (
     forward_chat_completion,
     get_active_openai_models,
@@ -61,7 +62,27 @@ async def create_chat_completion(
             },
         )
 
-    # 2. Resolve target running deployment for the requested model
+    # 2. Enforce Token Quota Budget
+    quota_allowed, quota_reason, quota_remaining = await quota_repository.check_quota(
+        db=db,
+        target_type=auth.actor_type,
+        target_id=auth.actor_id,
+        estimated_tokens=body.max_tokens or 100,
+    )
+    if not quota_allowed:
+        return JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            headers={"X-InferX-Quota-Remaining": str(quota_remaining)},
+            content={
+                "error": {
+                    "message": quota_reason,
+                    "type": "quota_exceeded",
+                    "code": 429,
+                }
+            },
+        )
+
+    # 3. Resolve target running deployment for the requested model
     deployment, error_reason = await resolve_target_deployment(db, body.model)
 
     if error_reason == "not_found":
@@ -132,7 +153,18 @@ async def create_chat_completion(
     except Exception as exc:
         logger.debug("Failed to record inference telemetry: %s", exc)
 
-    # Inject performance telemetry into response headers
+    # Record token consumption in enterprise quota ledger
+    try:
+        await quota_repository.record_consumption(
+            db=db,
+            target_type=auth.actor_type,
+            target_id=auth.actor_id,
+            tokens_consumed=result.usage.total_tokens,
+        )
+    except Exception as exc:
+        logger.debug("Failed to record token consumption: %s", exc)
+
+    # Inject performance and quota telemetry into response headers
     if "latency_ms" in metrics:
         response.headers["X-InferX-Latency-Ms"] = str(metrics["latency_ms"])
     if "ttft_ms" in metrics:
@@ -140,6 +172,7 @@ async def create_chat_completion(
     if "tokens_per_sec" in metrics:
         response.headers["X-InferX-Tokens-Per-Sec"] = str(metrics["tokens_per_sec"])
     response.headers["X-InferX-Deployment-Id"] = deployment.id
+    response.headers["X-InferX-Quota-Remaining"] = str(max(0, quota_remaining - result.usage.total_tokens))
 
     return result
 
