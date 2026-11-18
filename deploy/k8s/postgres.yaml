@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: inferx-postgres
+  namespace: inferx
+  labels:
+    app.kubernetes.io/name: inferx-postgres
+    app.kubernetes.io/component: database
+spec:
+  serviceName: inferx-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: inferx-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: inferx-postgres
+        app.kubernetes.io/component: database
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: inferx-config
+                  key: DATABASE_NAME
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: inferx-config
+                  key: DATABASE_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: inferx-secrets
+                  key: POSTGRES_PASSWORD
+          ports:
+            - containerPort: 5432
+              name: postgres
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 2048Mi
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - inferx
+                - -d
+                - inferx
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - inferx
+                - -d
+                - inferx
+            initialDelaySeconds: 15
+            periodSeconds: 15
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 20Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inferx-postgres
+  namespace: inferx
+  labels:
+    app.kubernetes.io/name: inferx-postgres
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+      name: postgres
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: inferx-postgres

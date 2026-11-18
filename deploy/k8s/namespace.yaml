@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: inferx
+  labels:
+    app.kubernetes.io/name: inferx
+    app.kubernetes.io/part-of: inferx-platform

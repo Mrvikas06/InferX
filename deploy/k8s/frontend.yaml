@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inferx-frontend
+  namespace: inferx
+  labels:
+    app.kubernetes.io/name: inferx-frontend
+    app.kubernetes.io/component: ui-dashboard
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: inferx-frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: inferx-frontend
+        app.kubernetes.io/component: ui-dashboard
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      containers:
+        - name: frontend
+          image: ghcr.io/mrvikas06/inferx-frontend:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3000"
+            - name: BACKEND_INTERNAL_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: inferx-config
+                  key: BACKEND_INTERNAL_URL
+          ports:
+            - containerPort: 3000
+              name: http
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 2048Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            timeoutSeconds: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inferx-frontend
+  namespace: inferx
+  labels:
+    app.kubernetes.io/name: inferx-frontend
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: http
+  selector:
+    app.kubernetes.io/name: inferx-frontend

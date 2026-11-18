@@ -1,0 +1,54 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: inferx-ingress
+  namespace: inferx
+  labels:
+    app.kubernetes.io/name: inferx-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "128m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+spec:
+  rules:
+    - host: inferx.local
+      http:
+        paths:
+          # OpenAI inference endpoints & FastAPI backend routes
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: inferx-backend
+                port:
+                  number: 8000
+          - path: /v1
+            pathType: Prefix
+            backend:
+              service:
+                name: inferx-backend
+                port:
+                  number: 8000
+          - path: /docs
+            pathType: Prefix
+            backend:
+              service:
+                name: inferx-backend
+                port:
+                  number: 8000
+          - path: /openapi.json
+            pathType: Exact
+            backend:
+              service:
+                name: inferx-backend
+                port:
+                  number: 8000
+          # Frontend Next.js web application
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: inferx-frontend
+                port:
+                  number: 3000
