@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import {
   Activity,
   Cpu,
+  ExternalLink,
   Flame,
   Gauge,
   HardDrive,
@@ -125,7 +126,25 @@ export default function AnalyticsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <a
+            href="http://localhost:3001"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-9 px-3 rounded-md border border-orange-500/30 bg-orange-950/20 hover:bg-orange-950/40 text-orange-300 text-xs font-medium flex items-center gap-1.5 transition-colors"
+          >
+            <span>Grafana Dashboard</span>
+            <ExternalLink className="size-3" />
+          </a>
+          <a
+            href="/metrics"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-9 px-3 rounded-md border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-medium flex items-center gap-1.5 transition-colors"
+          >
+            <span>OpenMetrics</span>
+            <ExternalLink className="size-3" />
+          </a>
           <button
             onClick={fetchTelemetry}
             disabled={isRefreshing}
